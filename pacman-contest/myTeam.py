@@ -77,7 +77,9 @@ class DummyAgent(CaptureAgent):
     Your initialization code goes here, if you need any.
     '''
     middleLine = self.getMiddleLine(gameState)
-    print(middleLine)
+    mapMatrix = self.getMapMatrix(gameState)
+    print(mapMatrix)
+    # print(middleLine)
 
   def getMiddleLine(self, gameState):
     middleLine = []
@@ -92,6 +94,57 @@ class DummyAgent(CaptureAgent):
       if (x, y) not in wallList:
         middleLine.append((x,y))
     return middleLine
+
+  def getMapMatrix(self, gameState):
+    """
+    Start counting from the top-left corner
+
+    0 1 2 ➡
+    1
+    2
+    ⬇
+
+    0: Walls
+    1: Available movements
+    2: RedFood
+    3: RedCapsule
+    4: BlueFood
+    5: BlueCapsule
+    """
+    mapMatrix = gameState.deepCopy().data.layout.layoutText
+    mapHeight = len(mapMatrix)
+    for i in range(mapHeight):
+      mapMatrix[i] = mapMatrix[i].replace('%', '0')
+      mapMatrix[i] = mapMatrix[i].replace(' ', '1')
+      mapMatrix[i] = mapMatrix[i].replace('.', '1')
+      mapMatrix[i] = mapMatrix[i].replace('o', '1')
+      mapMatrix[i] = mapMatrix[i].replace('1', '1')
+      mapMatrix[i] = mapMatrix[i].replace('2', '1')
+      mapMatrix[i] = mapMatrix[i].replace('3', '1')
+      mapMatrix[i] = mapMatrix[i].replace('4', '1')
+      mapMatrix[i] = list(mapMatrix[i])
+      mapMatrix[i] = list(map(float, mapMatrix[i]))
+    for redFood in gameState.getRedFood().asList():
+      x = redFood[0]
+      y = mapHeight - 1 - redFood[1]
+      mapMatrix[y][x] = 2.0
+    for redCapsule in gameState.getRedCapsules():
+      if not redCapsule:
+        continue
+      x = redCapsule[0]
+      y = mapHeight - 1 - redCapsule[1]
+      mapMatrix[y][x] = 3.0
+    for blueFood in gameState.getBlueFood().asList():
+      x = blueFood[0]
+      y = mapHeight - 1 - blueFood[1]
+      mapMatrix[y][x] = 4.0
+    for blueCapsule in gameState.getBlueCapsules():
+      if not blueCapsule:
+        continue
+      x = blueCapsule[0]
+      y = mapHeight - 1 - blueCapsule[1]
+      mapMatrix[y][x] = 5.0
+    return mapMatrix
 
   def chooseAction(self, gameState):
     """
