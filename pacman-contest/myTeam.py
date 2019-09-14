@@ -23,6 +23,7 @@ import game
 
 def createTeam(firstIndex, secondIndex, isRed,
                first = 'DummyAgent', second = 'DummyAgent'):
+  # TODO: for each agent:explore/eat/escape/...
   """
   This function should return a list of two agents that will form the
   team, initialized using firstIndex and secondIndex as their agent
@@ -156,4 +157,79 @@ class DummyAgent(CaptureAgent):
     You should change this in your own agent.
     '''
     return random.choice(actions)
+
+
+
+
+class AttackAgent(CaptureAgent):
+
+  def registerInitialState(self, gameState):
+    self.red = gameState.isOnRedTeam(self.index)
+    self.distancer = distanceCalculator.Distancer(gameState.data.layout)
+
+    # comment this out to forgo maze distance computation and use manhattan distances
+    # self.distancer.getMazeDistances()
+
+    import __main__
+    if '_display' in dir(__main__):
+      self.display = __main__._display
+
+  def getMiddleLine(self, gameState):
+    middleLine = []
+    mapWidth = gameState.data.layout.width
+    mapHeight = gameState.data.layout.height
+    if self.red:
+      x = int((mapWidth - 2) / 2)
+    else:
+      x = int((mapWidth - 2) / 2 + 1)
+    wallList = gameState.getWalls().asList()
+    for y in range(1, mapHeight):
+      if (x, y) not in wallList:
+        middleLine.append((x,y))
+    return middleLine
+
+  def attackHeuristic(self, gameState, index):
+    """
+    used for attack agent
+    dist(P,Food)
+      - x1 * dist(P,Ghost)
+      + x2 * dist(P,middleLine)(mean for distances to middle line positions)
+      - x3 * dist(P,P2)
+    """
+    curPos = gameState.getAgentPosition(index)
+    teamIds = gameState.getTeam(gameState) #teammate index
+    enemyIds = gameState.getOpponents(gameState) #enemy index
+
+    minDistToFood = 999999
+    foodList = self.getFood().asList()
+    for food in foodList:
+      newDist = self.getMazeDistance(curPos, food)
+      if newDist < minDistToFood:
+        minDistToFood = newDist
+
+    minDistToEnemy = 999999
+    for idx in enemyIds:
+      enemyPos = gameState.getAgentPosition(idx)
+      newDist = self.getMazeDistance(curPos, enemyPos)
+      if newDist < minDistToEnemy:
+        minDistToEnemy = newDist
+
+    for idx in teamIds:
+      if idx != index:
+        tmPos = gameState.getAgentPosition(idx)
+        distToTm = self.getMazeDistance(curPos, tmPos)
+        break
+
+    midAccesses = self.getMiddleLine(gameState)
+    sumDistToMid = 0
+    for midPos in midAccesses:
+      newDist = self.getMazeDistance(curPos, midPos)
+      sumDistToMid += newDist
+    distToMid = sumDistToMid/len(midAccesses)
+
+    x1 = 1
+    x2 = 0.5
+    x3 = 0.5
+
+    return minDistToFood - x1 * minDistToEnemy + x2 * distToMid - x3 * distToTm
 
