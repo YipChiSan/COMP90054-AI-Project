@@ -76,7 +76,22 @@ class DummyAgent(CaptureAgent):
     '''
     Your initialization code goes here, if you need any.
     '''
+    middleLine = self.getMiddleLine(gameState)
+    print(middleLine)
 
+  def getMiddleLine(self, gameState):
+    middleLine = []
+    mapWidth = gameState.data.layout.width
+    mapHeight = gameState.data.layout.height
+    if self.red:
+      x = int((mapWidth - 2) / 2)
+    else:
+      x = int((mapWidth - 2) / 2 + 1)
+    wallList = gameState.getWalls().asList()
+    for y in range(1, mapHeight):
+      if (x, y) not in wallList:
+        middleLine.append((x,y))
+    return middleLine
 
   def chooseAction(self, gameState):
     """
@@ -87,6 +102,5 @@ class DummyAgent(CaptureAgent):
     '''
     You should change this in your own agent.
     '''
-
     return random.choice(actions)
 
