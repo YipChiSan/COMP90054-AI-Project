@@ -191,14 +191,14 @@ class AttackAgent(CaptureAgent):
   def attackHeuristic(self, gameState, index):
     """
     used for attack agent
-    dist(P,Food)
-      - x1 * dist(P,Ghost)
+    dist(P,Food)  TODO:change to realtime food pos
+      - x1 * dist(P,Ghost)  TODO:change to ghost in sight
       + x2 * dist(P,middleLine)(mean for distances to middle line positions)
       - x3 * dist(P,P2)
     """
     curPos = gameState.getAgentPosition(index)
-    teamIds = gameState.getTeam(gameState) #teammate index
-    enemyIds = gameState.getOpponents(gameState) #enemy index
+    teamIds = self.getTeam(gameState) #teammate index
+    enemyIds = self.getOpponents(gameState) #enemy index
 
     minDistToFood = 999999
     foodList = self.getFood().asList()
