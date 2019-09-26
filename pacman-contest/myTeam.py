@@ -14,8 +14,8 @@ import copy
 import InitialMap
 from captureAgents import CaptureAgent
 import random, time, util
-from game import Directions
 import game
+from myProblem import *
 
 #global variable for store currently carried food number of every agent
 carriedFood = dict()
@@ -175,6 +175,7 @@ class AttackAgent(CaptureAgent):
     self.enemyMiddleX = self.getEnemyMiddleX(gameState)
     self.middleLine = self.getMiddleLine(gameState)
     self.enemyMiddleLine = self.getEnemyMiddleLine(gameState)
+    self.deadEnds = InitialMap.searchDeadEnd(getMapMatrix(gameState))
 
   def getMiddleX(self, gameState):
     mapWidth = gameState.data.layout.width
@@ -287,7 +288,7 @@ class AttackAgent(CaptureAgent):
     # init
     visited = set()
     best_g = dict()
-    """state: [position, foodGrid, food]"""
+    """state: [position, ...]"""
     """state, action list, cost value g"""
     start_node = (problem.getStartState(gameState, self.getFood(gameState)), [], 0)
     frontier = util.PriorityQueue()
@@ -308,13 +309,43 @@ class AttackAgent(CaptureAgent):
         best_g[current_node[0]] = current_node[2]
         visited.add(current_node[0])
         if problem.isGoalState(gameState, current_node[0]):
-          return current_node[1]
+          return current_node[1] # fixme: return index[0] since only the first action is needed
         else:
           for successor in problem.getSuccessors(current_node[0]):
             cost_g = current_node[2] + successor[2]
             priority = cost_g + heuristic(successor[0])
             path = current_node[1] + [successor[1]]
             frontier.push((successor[0], path, cost_g), priority)
+
+    # if no result, calculate four adjacent positions
+    # fixme: return index[0] since only the first action is needed
+    return self.forcedReturn(problem, start_node[0])
+
+  def forcedReturn(self, problem, state):
+    #fixme: currently used for escape heuristic
+    maxDistToEnemy = 0
+    prevMinDistToMid = 999999
+    for successor in problem.getSuccessors(state):
+      distList = problem.getInSightEnemyDistances(successor[0][0])
+      sumDistToEnemy = 0
+      for dist in distList:
+        sumDistToEnemy += dist
+
+      if sumDistToEnemy > maxDistToEnemy:
+        maxDistToEnemy = sumDistToEnemy
+        action = successor[1]
+        prevMinDistToMid = 999999
+      elif sumDistToEnemy == maxDistToEnemy:
+        minDistToMid = 999999
+        for midPos in self.middleLine:
+          newDist = self.getMazeDistance(successor[0][0], midPos)
+          if newDist < minDistToMid:
+            minDistToMid = newDist
+        if minDistToMid < prevMinDistToMid:
+          prevMinDistToMid = minDistToMid
+          action = successor[1]
+
+    return action
 
   def eatOneHeuristic(self, state): # target on eating
 
@@ -365,7 +396,7 @@ class AttackAgent(CaptureAgent):
 
   def eatWithDeadEndHeuristic(self, state):
     curPos, foodGrid, foodToEat = state
-    foodList = copy.deepcopy(foodGrid.asList()) # TODO: delete FOOD in dead end path from list?
+    foodList = copy.deepcopy(foodGrid.asList())
     sumFoodDist = 0
     closed = [curPos]  # food in path calculated
     while foodToEat > 0:
@@ -393,6 +424,14 @@ class AttackAgent(CaptureAgent):
 
   def escapeHeuristic(self, state):
     #TODO:
+    curPos = state[0]
+    middleList = self.middleLine
+    minDistToMid = 999999
+    for midPoint in middleList:
+      newDist = self.getMazeDistance(curPos, midPoint)
+      if newDist < minDistToMid:
+        minDistToMid = newDist
+
     pass
 
   def denfendingHeuristic(self, state):
@@ -420,197 +459,3 @@ class AttackAgent(CaptureAgent):
         minDistToMid = newDist
 
     return minDistToMid
-
-
-class EatOneProblem:
-  def __init__(self, gameState, index, midX, enemyMidX, midLine, enemyMidLine):
-    # number of food to be eat that is used in policy selection
-    # change to be applied in a new heuristic
-    global carriedFood
-    self.targetFoodNum = 1
-    self.index = index
-    self.walls = gameState.getWalls()
-    self.middleX = midX
-    self.enemyMiddleX = enemyMidX
-    self.middleLine = midLine
-    self.enemyMiddleLine = enemyMidLine
-    self.carriedFood = carriedFood[self.index]
-
-  def getStartState(self, gameState, foodGrid):
-    return (gameState.getAgentPosition(self.index), foodGrid, self.targetFoodNum - self.carriedFood)
-
-  def isGoalState(self, gameState, state):
-    return self.carriedFood == self.targetFoodNum
-    # return state[0] in self.middleLine and carriedFood[self.index] == self.targetFoodNum
-
-  def getSuccessors(self, state):
-    successors = []
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]: #if STOP needed?
-      x, y = state[0]
-      dx, dy = game.Actions.directionToVector(direction)
-      nextx, nexty = int(x + dx), int(y + dy)
-      if not self.walls[nextx][nexty]:
-        nextFood = state[1].copy()
-        if (nextx,nexty) in state[1].asList(): # successor in enemy's place
-          nextFood[nextx][nexty] = False
-          self.carriedFood += 1
-        successors.append((((nextx, nexty), nextFood, self.targetFoodNum - self.carriedFood), direction, 1))
-    return successors
-
-class EatWithDeadEndProblem: # default: eat one
-  def __init__(self, gameState, index, midX, enemyMidX, midLine, enemyMidLine):
-    global carriedFood
-    self.targetFoodNum = 1
-    self.index = index
-    self.deadEnds = InitialMap.searchDeadEnd(getMapMatrix(gameState))
-    self.walls = gameState.getWalls() + self.deadEnds # add deadEnd points to walls
-    self.middleX = midX
-    self.enemyMiddleX = enemyMidX
-    self.middleLine = midLine
-    self.enemyMiddleLine = enemyMidLine
-    self.carriedFood = carriedFood[self.index]
-
-  def getStartState(self, gameState, foodGrid):
-    return (gameState.getAgentPosition(self.index), foodGrid, self.targetFoodNum - self.carriedFood)
-
-  def isGoalState(self, gameState, state):
-    return self.carriedFood == self.targetFoodNum
-    # return state[0] in self.middleLine and carriedFood[self.index] == self.targetFoodNum
-
-  def getSuccessors(self, state):
-    successors = []
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
-      x, y = state[0]
-      dx, dy = game.Actions.directionToVector(direction)
-      nextx, nexty = int(x + dx), int(y + dy)
-      if not self.walls[nextx][nexty]:
-        nextFood = state[1].copy()
-        if (nextx, nexty) in state[1].asList():  # successor in enemy's place
-          nextFood[nextx][nexty] = False
-          self.carriedFood += 1
-        successors.append((((nextx, nexty), nextFood, self.targetFoodNum - self.carriedFood), direction, 1))
-    return successors
-
-class EatCapsuleProblem:
-  def __init__(self, gameState, index, midX, enemyMidX, midLine, enemyMidLine):
-    self.index = index
-    self.walls = gameState.getWalls()
-    self.middleX = midX
-    self.enemyMiddleX = enemyMidX
-    self.middleLine = midLine
-    self.enemyMiddleLine = enemyMidLine
-    self.capsules = AttackAgent.getCapsules()
-
-  def getStartState(self, gameState, foodGrid):
-    return (gameState.getAgentPosition(self.index), self.capsules)
-
-  def isGoalState(self, gameState, state):
-    for capPos in state[1]:
-      if capPos == (-1,-1):
-        return True
-    return False
-
-  def getSuccessors(self, state):
-    successors = []
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]: #if STOP needed?
-      x, y = state[0]
-      dx, dy = game.Actions.directionToVector(direction)
-      nextx, nexty = int(x + dx), int(y + dy)
-      if not self.walls[nextx][nexty]:
-        for idx,(x,y) in enumerate(self.capsules):
-          if x == nextx and y == nexty:
-            self.capsules[idx] = (-1,-1)
-        successors.append((((nextx, nexty), self.capsules), direction, 1))
-    return successors
-
-class EscapeProblem:
-  def __init__(self, gameState, index, enemyIndices, midX, enemyMidX, midLine, enemyMidLine):
-    self.index = index
-    self.walls = gameState.getWalls()
-    self.middleX = midX
-    self.enemyMiddleX = enemyMidX
-    self.middleLine = midLine
-    self.enemyMiddleLine = enemyMidLine
-    self.enemyIndices = enemyIndices
-    self.enemyPositions = set()
-    for idx in self.enemyIndices:
-      enemyPos = gameState.getAgentPosition(idx)
-      if enemyPos != None:
-        self.enemyPositions.add(enemyPos)
-
-  def getStartState(self, gameState, foodGrid):
-    # TODO: start distance? In sight or real distance <= 5?
-    return (gameState.getAgentPosition(self.index),)
-
-  def isGoalState(self, gameState, state):
-    for idx in self.enemyIndices:
-      tempPos = gameState.getAgentPosition(idx)
-      # TODO: in sight or real distance <= 5 as criteria ?
-      if tempPos != None:# enemy in sight
-        return False
-
-    return state[0][0] == self.middleX
-
-  def getSuccessors(self, state):
-    successors = []
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-      x, y = state[0]
-      dx, dy = game.Actions.directionToVector(direction)
-      nextx, nexty = int(x + dx), int(y + dy)
-      if not self.walls[nextx][nexty]:
-        successors.append((((nextx, nexty),), direction, 1)) # TODO: distance?
-    return successors
-
-class DefendingProblem:
-  #TODO: [reach the change element in two situations]: enemy in sight/foodGrid change
-  pass
-
-class ReachMiddleListProblem:
-  def __init__(self, gameState, index, midX, enemyMidX, midLine, enemyMidLine):
-    self.index = index
-    self.walls = gameState.getWalls()
-    self.middleX = midX
-    self.enemyMiddleX = enemyMidX
-    self.middleLine = midLine
-    self.enemyMiddleLine = enemyMidLine
-
-  def getStartState(self, gameState, foodGrid):
-    return (gameState.getAgentPosition(self.index), )
-
-  def isGoalState(self, gameState, state):
-    return state[0][0] == self.enemyMiddleX
-
-  def getSuccessors(self, state):
-    successors = []
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-      x, y = state[0]
-      dx, dy = game.Actions.directionToVector(direction)
-      nextx, nexty = int(x + dx), int(y + dy)
-      if not self.walls[nextx][nexty]:
-        successors.append((((nextx, nexty),), direction, 1))
-    return successors
-
-class BackToMiddleListProblem:
-  def __init__(self, gameState, index, midX, enemyMidX, midLine, enemyMidLine):
-    self.index = index
-    self.walls = gameState.getWalls()
-    self.middleX = midX
-    self.enemyMiddleX = enemyMidX
-    self.middleLine = midLine
-    self.enemyMiddleLine = enemyMidLine
-
-  def getStartState(self, gameState, foodGrid):
-    return (gameState.getAgentPosition(self.index),)
-
-  def isGoalState(self, gameState, state):
-    return state[0][0] == self.middleX
-
-  def getSuccessors(self, state):
-    successors = []
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-      x, y = state[0]
-      dx, dy = game.Actions.directionToVector(direction)
-      nextx, nexty = int(x + dx), int(y + dy)
-      if not self.walls[nextx][nexty]:
-        successors.append((((nextx, nexty),), direction, 1))
-    return successors

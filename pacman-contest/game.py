@@ -284,7 +284,8 @@ def reconstituteGrid(bitRep):
 # Parts you shouldn't have to read #
 ####################################
 
-class Actions:
+class \
+  Actions:
     """
     A collection of static methods for manipulating move actions.
     """
