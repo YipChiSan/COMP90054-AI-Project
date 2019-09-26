@@ -126,12 +126,6 @@ class EscapeProblem:
         self.enemyPositions.add(enemyPos)
     self.expandedForbidden = defaultdict(set()) # key is the expanded time
 
-  def getInSightEnemyDistances(self, curPos): # distance to enemy from current position
-    distList = []
-    for enemyPos in self.enemyPositions:
-      distList.append(AttackAgent.getMazeDistance(enemyPos, curPos))
-    return distList
-
   def storeExpandedForbidden(self, step):
     # return a expanded wall list from original one
     if step == 1:
