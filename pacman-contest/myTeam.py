@@ -347,115 +347,11 @@ class AttackAgent(CaptureAgent):
 
     return action
 
-  def eatOneHeuristic(self, state): # target on eating
 
-    """
-    used for attack agent
-    dist(P,Food): to the nearest x food positions[x = foodToEat]
-      + x1 * dist(P,middleLine)(mean for distances to middle line positions)
-      - x2 * dist(P,P2)
-    @:param index: index of agent the heuristic is used on
-            state: [(x, y), foodGrid, foodToEat]
-    """
-    curPos, foodGrid, foodToEat = state
-    foodList = copy.deepcopy(foodGrid.asList())
-    sumFoodDist = 0
-    closed = [curPos] # food in path calculated
-    while foodToEat > 0:
-      minDistToFood = 999999
-      for food in foodList:
-        for pos in closed:
-          newDist = self.getMazeDistance(pos, food)
-          if newDist < minDistToFood:
-            minDistToFood = newDist
-            nearestFoodPos = food
-      foodList.remove(nearestFoodPos)
-      closed.append(nearestFoodPos)
-      foodToEat -= 1
-      sumFoodDist += minDistToFood
 
-    # midAccesses = self.getMiddleLine(gameState)
-    # minDistToMid = 999999
-    # for midPos in midAccesses:
-    #   for closedPos in closed:
-    #     newDist = self.getMazeDistance(closedPos, midPos)
-    #     if newDist < minDistToMid:
-    #       minDistToMid = newDist
-    #
-    # teamIds = self.getTeam(gameState)  # teammate index
-    # for idx in teamIds:
-    #   if idx != self.index:
-    #     tmPos = gameState.getAgentPosition(idx)
-    #     # find pos of the other pac man and calculate distance
-    #     distToTm = self.getMazeDistance(curPos, tmPos)
-    #     break
 
-    # x = 0.4
-    # return sumFoodDist + minDistToMid -  distToTm
-    return sumFoodDist
 
-  def eatWithDeadEndHeuristic(self, state):
-    curPos, foodGrid, foodToEat = state
-    foodList = copy.deepcopy(foodGrid.asList())
-    sumFoodDist = 0
-    closed = [curPos]  # food in path calculated
-    while foodToEat > 0:
-      minDistToFood = 999999
-      for food in foodList:
-        for pos in closed:
-          newDist = self.getMazeDistance(pos, food)
-          if newDist < minDistToFood:
-            minDistToFood = newDist
-            nearestFoodPos = food
-      foodList.remove(nearestFoodPos)
-      closed.append(nearestFoodPos)
-      foodToEat -= 1
-      sumFoodDist += minDistToFood
-    return sumFoodDist
 
-  def eatCapsuleHeuristic(self, state):
-    curPos, capsuleList = state
-    minDistToCapsule = 999999
-    for capsule in capsuleList:
-        newDist = self.getMazeDistance(curPos, capsule)
-        if newDist < minDistToCapsule:
-          minDistToCapsule = newDist
-    return minDistToCapsule
 
-  def escapeHeuristic(self, state):
-    #TODO:
-    curPos = state[0]
-    middleList = self.middleLine
-    minDistToMid = 999999
-    for midPoint in middleList:
-      newDist = self.getMazeDistance(curPos, midPoint)
-      if newDist < minDistToMid:
-        minDistToMid = newDist
 
-    pass
 
-  def denfendingHeuristic(self, state):
-    # TODO:
-    pass
-
-  def reachMiddleListHeuristic(self, state): # reach the side of our own on the middle list
-    curPos = state[0]
-    enemyMiddleList = self.enemyMiddleLine
-    minDistToMid = 999999
-    for midPoint in enemyMiddleList:
-      newDist = self.getMazeDistance(curPos, midPoint)
-      if newDist < minDistToMid:
-        minDistToMid = newDist
-
-    return minDistToMid
-
-  def backToMiddleListHeuristic(self, state): # reach the side of our own on the middle list
-    curPos = state[0]
-    middleList = self.middleLine
-    minDistToMid = 999999
-    for midPoint in middleList:
-      newDist = self.getMazeDistance(curPos, midPoint)
-      if newDist < minDistToMid:
-        minDistToMid = newDist
-
-    return minDistToMid
