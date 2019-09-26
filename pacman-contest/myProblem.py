@@ -1,6 +1,6 @@
 import copy
 
-from myTeam import AttackAgent
+from myTeam import *
 from game import *
 from collections import defaultdict
 
@@ -46,7 +46,7 @@ class EatWithDeadEndProblem: # default: eat one
     self.targetFoodNum = 1
     self.index = index
     self.deadEnds = AttackAgent.deadEnds
-    self.walls = gameState.getWalls() + self.deadEnds # add deadEnd points to walls
+    self.walls = gameState.getWalls() # add deadEnd points to walls
     self.middleX = midX
     self.enemyMiddleX = enemyMidX
     self.middleLine = midLine
@@ -108,6 +108,60 @@ class EatCapsuleProblem:
         successors.append((((nextx, nexty), self.capsules), direction, 1))
     return successors
 
+class ReachMiddleListProblem:
+  def __init__(self, gameState, index, midX, enemyMidX, midLine, enemyMidLine):
+    self.index = index
+    self.walls = gameState.getWalls()
+    self.middleX = midX
+    self.enemyMiddleX = enemyMidX
+    self.middleLine = midLine
+    self.enemyMiddleLine = enemyMidLine
+
+  def getStartState(self, gameState, foodGrid):
+    return (gameState.getAgentPosition(self.index), )
+
+  def isGoalState(self, gameState, state):
+    return state[0][0] == self.enemyMiddleX
+
+  def getSuccessors(self, state):
+    successors = []
+    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+      x, y = state[0]
+      dx, dy = Actions.directionToVector(direction)
+      nextx, nexty = int(x + dx), int(y + dy)
+      if not self.walls[nextx][nexty]:
+        successors.append((((nextx, nexty),), direction, 1))
+    return successors
+
+class BackToMiddleListProblem:
+  def __init__(self, gameState, index, midX, enemyMidX, midLine, enemyMidLine):
+    self.index = index
+    self.walls = gameState.getWalls()
+    self.middleX = midX
+    self.enemyMiddleX = enemyMidX
+    self.middleLine = midLine
+    self.enemyMiddleLine = enemyMidLine
+
+  def getStartState(self, gameState, foodGrid):
+    return (gameState.getAgentPosition(self.index),)
+
+  def isGoalState(self, gameState, state):
+    return state[0][0] == self.middleX
+
+  def getSuccessors(self, state):
+    successors = []
+    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+      x, y = state[0]
+      dx, dy = Actions.directionToVector(direction)
+      nextx, nexty = int(x + dx), int(y + dy)
+      if not self.walls[nextx][nexty]:
+        successors.append((((nextx, nexty),), direction, 1))
+    return successors
+
+class DefendingProblem:
+  #TODO: [reach the change element in two situations]: enemy in sight/foodGrid change
+  pass
+
 class EscapeProblem:
   def __init__(self, gameState, index, enemyIndices, midX, enemyMidX, midLine, enemyMidLine):
     self.index = index
@@ -118,7 +172,7 @@ class EscapeProblem:
     self.enemyMiddleX = enemyMidX
     self.middleLine = midLine
     self.enemyMiddleLine = enemyMidLine
-    self.enemyIndices = enemyIndices
+    self.enemyIndices = AttackAgent.getOpponents()
     self.enemyPositions = set() # in sight enemies
     for idx in self.enemyIndices:
       enemyPos = gameState.getAgentPosition(idx)
@@ -172,60 +226,6 @@ class EscapeProblem:
         if self.expandedForbidden[state[2]+1] == None:
           self.storeExpandedForbidden(state[2]+1)
         successors.append(((nextx, nexty), self.expandedForbidden[state[2]+1], state[2]+1), direction, 1)
-    return successors
-
-class DefendingProblem:
-  #TODO: [reach the change element in two situations]: enemy in sight/foodGrid change
-  pass
-
-class ReachMiddleListProblem:
-  def __init__(self, gameState, index, midX, enemyMidX, midLine, enemyMidLine):
-    self.index = index
-    self.walls = gameState.getWalls()
-    self.middleX = midX
-    self.enemyMiddleX = enemyMidX
-    self.middleLine = midLine
-    self.enemyMiddleLine = enemyMidLine
-
-  def getStartState(self, gameState, foodGrid):
-    return (gameState.getAgentPosition(self.index), )
-
-  def isGoalState(self, gameState, state):
-    return state[0][0] == self.enemyMiddleX
-
-  def getSuccessors(self, state):
-    successors = []
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-      x, y = state[0]
-      dx, dy = Actions.directionToVector(direction)
-      nextx, nexty = int(x + dx), int(y + dy)
-      if not self.walls[nextx][nexty]:
-        successors.append((((nextx, nexty),), direction, 1))
-    return successors
-
-class BackToMiddleListProblem:
-  def __init__(self, gameState, index, midX, enemyMidX, midLine, enemyMidLine):
-    self.index = index
-    self.walls = gameState.getWalls()
-    self.middleX = midX
-    self.enemyMiddleX = enemyMidX
-    self.middleLine = midLine
-    self.enemyMiddleLine = enemyMidLine
-
-  def getStartState(self, gameState, foodGrid):
-    return (gameState.getAgentPosition(self.index),)
-
-  def isGoalState(self, gameState, state):
-    return state[0][0] == self.middleX
-
-  def getSuccessors(self, state):
-    successors = []
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-      x, y = state[0]
-      dx, dy = Actions.directionToVector(direction)
-      nextx, nexty = int(x + dx), int(y + dy)
-      if not self.walls[nextx][nexty]:
-        successors.append((((nextx, nexty),), direction, 1))
     return successors
 
 
@@ -303,13 +303,6 @@ def eatCapsuleHeuristic(agent, state):
         minDistToCapsule = newDist
   return minDistToCapsule
 
-def escapeHeuristic(agent, state):
-  return backToMiddleListHeuristic(agent, state)
-
-def denfendingHeuristic(self, state):
-  # TODO:
-  pass
-
 def reachMiddleListHeuristic(agent, state): # reach the side of our own on the middle list
   curPos = state[0]
   enemyMiddleList = agent.enemyMiddleLine
@@ -332,3 +325,138 @@ def backToMiddleListHeuristic(agent, state): # reach the side of our own on the 
 
   return minDistToMid
 
+def defendingHeuristic(self, state):
+  # TODO:
+  pass
+
+def escapeHeuristic(agent, state):
+  curPos = state[0]
+  middleList = agent.middleLine
+  minDistToMid = 999999
+  for midPoint in middleList:
+    newDist = agent.getMazeDistance(curPos, midPoint)
+    if newDist < minDistToMid:
+      minDistToMid = newDist
+  return minDistToMid
+
+
+def getActualWalls(agent):
+  walls = agent.getWalls()
+  return walls
+
+def getWallsWithDeadEnd(agent):
+  walls = agent.walls
+  deadEnds = agent.deadEnds
+  for pos in deadEnds:
+    walls[pos[0]][pos[1]] = True
+  return walls
+
+#find shortest path, to any pos in posList
+def minDistance(pos, posList, walls, agent):
+  minDist = 9999
+  action = Directions.NORTH
+  for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
+    x, y = pos
+    dx, dy = Actions.directionToVector(direction)
+    nextx, nexty = int(x + dx), int(y + dy)
+    if not walls[nextx][nexty]:
+      for target in posList:
+        dist = agent.getMazeDistance((nextx, nexty), target)
+        if dist < minDist:
+          minDist = dist
+          action = direction
+  return action
+
+def getFoodExceptDeadEnds(agent, gameState):
+  food = agent.getFood(gameState)
+  for pos in agent.deadEnds:
+    food[pos[0]][pos[1]] = False
+  foodList = food.asList()
+  return foodList
+
+def eatOneFood(agent, gameState, index):
+  food = agent.getFood(gameState)
+  foodList = food.asList()
+  pos = gameState.getAgentPosition(index)
+  walls = getActualWalls(agent)
+  action = minDistance(pos, foodList, walls, agent)
+  return action
+
+def eatFoodOutsideDeadEnd(agent, gameState, index):
+  foodList = getFoodExceptDeadEnds(agent, gameState)
+  pos = gameState.getAgentPosition(index)
+  walls = getWallsWithDeadEnd(agent)
+  action = minDistance(pos, foodList, walls, agent)
+  return action
+
+def eatCapsule(agent, gameState, index):
+  capsuleList = agent.getCapsules()
+  pos = gameState.getAgentPosition(index)
+  walls = getActualWalls(agent)
+  action = minDistance(pos, capsuleList, walls, agent)
+  return action
+
+def reachOwnMidList(agent, gameState, index):
+  middleList = agent.middleLine
+  pos = gameState.getAgentPosition(index)
+  walls = getActualWalls(agent)
+  action = minDistance(pos, middleList, walls, agent)
+  return action
+
+def reachEnemyMidList(agent, gameState, index):
+  enemyMiddleList = agent.enemyMiddleLine
+  pos = gameState.getAgentPosition(index)
+  walls = getActualWalls(agent)
+  action = minDistance(pos, enemyMiddleList, walls, agent)
+  return action
+
+def eatFoodClosestToMidList(agent, gameState, index):
+  midList = agent.middleLine
+  foodList = getFoodExceptDeadEnds(agent, gameState)
+  pos = gameState.getAgentPosition(index)
+  walls = getWallsWithDeadEnd(agent)
+  minDist = 9999
+  for midPos in midList:
+    x, y = midPos
+    if not walls[x][y]:
+      for target in foodList:
+        dist = agent.getMazeDistance((x, y), target)
+        if dist < minDist:
+          minDist = dist
+          minDistFoodPos = target
+  action = minDistance(pos, [minDistFoodPos], walls, agent)
+  return action
+
+def eatClosestGhost(agent, gameState, index):
+  ghostIndices = agent.getOpponents(gameState)
+  ghostList = []
+  for idx in ghostIndices:
+    enemyPos = gameState.getAgentPosition(idx)
+    if enemyPos != None:
+      ghostList.append(enemyPos)
+  pos = gameState.getAgentPosition(index)
+  walls = getWallsWithDeadEnd(agent)
+  action = minDistance(pos, ghostList, walls, agent)
+  return action
+
+def eatFarthestFoodFromGhost(agent, gameState, index):
+  pass
+  # fixme: blocked
+  # enemyIndices = agent.getOpponents()
+  # enemyPosList = [gameState.getAgentPosition()]
+  # pos = gameState.getAgentPosition(index)
+  # walls = getWallsWithDeadEnd(agent)
+  # action = minDistance(pos, foodList, walls, agent)
+  # return action
+
+def foolGhost(agent, gameState, index):
+  ghostIndices = agent.getOpponents(gameState)
+  ghostList = []
+  for idx in ghostIndices:
+    enemyPos = gameState.getAgentPosition(idx)
+    if enemyPos != None:
+      ghostList.append(enemyPos)
+  pos = gameState.getAgentPosition(index)
+  walls = getWallsWithDeadEnd(agent)
+  action = minDistance(pos, ghostList, walls, agent)
+  return action
