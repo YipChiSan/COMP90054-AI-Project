@@ -242,16 +242,14 @@ class AttackAgent(CaptureAgent):
           return self.aStarSearch(backToMiddleListProblem, gameState, self.backToMiddleListHeuristic)[0]
       # else: # need to eat more food
         #go across the middle line
-      if False:#curPos[0] <= self.middleX:
+      if curPos[0] <= self.middleX:
         print("go to middle line to start searching, agent index:", self.index, "carriedFood:", carriedFood[self.index])
         reachMiddleListProblem = ReachMiddleListProblem(gameState, self.index, self.middleX, self.enemyMiddleX, self.middleLine, self.enemyMiddleLine)
         return self.aStarSearch(reachMiddleListProblem, gameState, self.reachMiddleListHeuristic)[0]
       else: # search for more food
         print("search for food, agent index:", self.index, "carriedFood:", carriedFood[self.index])
-        attackProblem = EatOneProblem(gameState, self.index, self.middleX, self.enemyMiddleX, self.middleLine, self.enemyMiddleLine)
-        #self.aStarSearch(attackProblem, gameState, self.eatOneHeuristic)[0]
+        action = self.aStarSearch(attackProblem, gameState, self.eatOneHeuristic)[0]
         # action = self.aStarSearch(eatOneProblem, gameState, self.eatOneHeuristic)[0]
-        action = eatOneFood(gameState,self.index,self)
         dx, dy = game.Actions.directionToVector(action)
         print("dx:",dx,"dy:",dy)
         # getFood是到达点后更新过的list，curPos永远不会在里面
@@ -420,41 +418,8 @@ class AttackAgent(CaptureAgent):
       newDist = self.getMazeDistance(curPos, midPoint)
       if newDist < minDistToMid:
         minDistToMid = newDist
+
     return minDistToMid
-
-def eatOneFood(gameState,index,agent):
-    enemyFood = gameState.getRedFood() if index & 1 else gameState.getBlueFood()
-    enemyFood = enemyFood.asList()
-    pos = gameState.getAgentPosition(index)
-    #foodList = gameState.getFood.asList()
-    action = minDistance(gameState,pos,enemyFood,agent)
-    print(action)
-    return action
-
-def minDistance(gameState,pos,posList,agent):
-    walls = gameState.getWalls()
-    minDist = 9999
-    action = "North"
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]: #if STOP needed?
-      x, y = pos
-      dx, dy = game.Actions.directionToVector(direction)
-      nextx, nexty = int(x + dx), int(y + dy)
-      if not walls[nextx][nexty]:
-          for target in posList:
-              dist =  agent.getMazeDistance((nextx,nexty),target)
-              if dist < minDist:
-                  minDist = dist
-                  action = direction
-    return action
-    # action = "North"
-    # for move in moves:
-    #     (nextx,nexty) = (pos[0]+move[0],pos[1]+move[1])
-    #     if not walls[nextx,nexty]:
-    #         for target in posList:
-    #             dist = AttackAgent.getMazeDistance((nextx,nexty),target)
-    #             if dist < minDist:
-    #                 minDist = dist
-    #                 action =
 
 
 class EatOneProblem:
@@ -462,7 +427,6 @@ class EatOneProblem:
     # number of food to be eat that is used in policy selection
     # change to be applied in a new heuristic
     global carriedFood
-
     self.targetFoodNum = 1
     self.index = index
     self.walls = gameState.getWalls()
