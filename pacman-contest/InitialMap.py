@@ -1,3 +1,4 @@
+import copy
 def searchDeadEnd(map):
     # 0: Walls
     # 1: Available movements
@@ -41,7 +42,6 @@ def capsuleMove(map,x,y,deadEnd,caList):
                     caList = capsuleMove(map,x,y,deadEnd,caList)
     return caList
 
-
 def moveNum(map,x,y,deadEnd):
     numDead = ((x-1,y) in deadEnd) + ((x+1,y) in deadEnd) + ((x,y-1) in deadEnd)+((x,y+1) in deadEnd)
     return (map[x-1][y] != 0) + (map[x+1][y] != 0 ) + (map[x][y-1] !=0) + (map[x][y+1] !=0) - numDead
@@ -55,3 +55,137 @@ def moveEnd(map,x,y,deadEnd):
                 # deadEnd.append((x+i[0],y+i[1]))
                 deadEnd = moveEnd(map,x+i[0],y+i[1],deadEnd)
     return deadEnd
+
+
+
+# def searchDeadEnd(map):
+#     # 0: Walls
+#     # 1: Available movements
+#     # 2: RedFood
+#     # 3: RedCapsule
+#     # 4: BlueFood
+#     # 5: BlueCapsule
+#     #
+#     # blueCapsule = {}
+#     # redCapsule = {}
+#     deadEnd = {}
+#     for i in range(1,len(map)-1):
+#         for j in range(1,len(map[i])-1):
+#             if map[i][j] != 0:
+#                 if moveNum(map,i,j,deadEnd) == 1:
+#                     deadEnd,depth = moveEnd(map,i,j,deadEnd,1)
+#     for i in range(0,len(map)):
+#         for j in range(0,len(map[i])):
+#             if map[i][j] == 0:
+#                 print("%",end='')
+#             else:
+#                 if (i,j) in deadEnd:
+#                     print(deadEnd[(i,j)],end = "")
+#                 else:
+#                     print("#",end = "")
+#         print()
+#     print("END")
+#     return deadEnd
+#
+# def moveNum(map,x,y,deadEnd):
+#     numDead = ((x-1,y) in deadEnd) + ((x+1,y) in deadEnd) + ((x,y-1) in deadEnd)+((x,y+1) in deadEnd)
+#     return (map[x-1][y] != 0) + (map[x+1][y] != 0 ) + (map[x][y-1] !=0) + (map[x][y+1] !=0) - numDead
+#
+# def moveEnd(map,x,y,deadEnd,depth):
+#     newdepth = depth
+#     deadEnd[(x,y)] = newdepth - depth +1
+#     moves = [(-1,0),(+1,0),(0,-1),(0,+1)]
+#     for i in moves:
+#         if map[x+i[0]][y+i[1]] != 0:
+#             if moveNum(map,x+i[0],y+i[1],deadEnd) == 1:
+#                 deadEnd[(x,y)] = depth
+#                 deadEnd,newdepth = moveEnd(map,x+i[0],y+i[1],deadEnd,depth+1)
+#                 deadEnd[(x,y)] = newdepth - deadEnd[(x,y)]+1
+#     return deadEnd,newdepth
+
+def getMiddleX(self, gameState):
+    mapWidth = gameState.data.layout.width
+    if self.red:
+      x = int((mapWidth - 2) / 2)
+    else:
+      x = int((mapWidth - 2) / 2 + 1)
+    return x
+
+def getEnemyMiddleX(self, gameState): # x of middle line on enemy's side
+    mapWidth = gameState.data.layout.width
+    if self.red:
+      enemyX = int((mapWidth - 2) / 2 + 1)
+    else:
+      enemyX = int((mapWidth - 2) / 2)
+    return enemyX
+
+def getMiddleLine(self, gameState):
+    middleLine = []
+    mapHeight = gameState.data.layout.height
+    x = self.middleX
+    wallList = gameState.getWalls().asList()
+    for y in range(1, mapHeight):
+      if (x, y) not in wallList:
+        middleLine.append((x,y))
+    return middleLine
+
+def getEnemyMiddleLine(self, gameState):
+    enemyMiddleLine = []
+    mapHeight = gameState.data.layout.height
+    x = self.enemyMiddleX
+    wallList = gameState.getWalls().asList()
+    for y in range(1, mapHeight):
+      if (x, y) not in wallList:
+        enemyMiddleLine.append((x, y))
+    return enemyMiddleLine
+
+def getMapMatrix(gameState):
+  """
+  Start counting from the top-left corner
+
+  0 1 2 ➡
+  1
+  2
+  ⬇
+
+  0: Walls
+  1: Available movements
+  2: RedFood
+  3: RedCapsule
+  4: BlueFood
+  5: BlueCapsule
+  """
+  mapMatrix = gameState.deepCopy().data.layout.layoutText
+  mapHeight = len(mapMatrix)
+  for i in range(mapHeight):
+    mapMatrix[i] = mapMatrix[i].replace('%', '0')
+    mapMatrix[i] = mapMatrix[i].replace(' ', '1')
+    mapMatrix[i] = mapMatrix[i].replace('.', '1')
+    mapMatrix[i] = mapMatrix[i].replace('o', '1')
+    mapMatrix[i] = mapMatrix[i].replace('1', '1')
+    mapMatrix[i] = mapMatrix[i].replace('2', '1')
+    mapMatrix[i] = mapMatrix[i].replace('3', '1')
+    mapMatrix[i] = mapMatrix[i].replace('4', '1')
+    mapMatrix[i] = list(mapMatrix[i])
+    mapMatrix[i] = list(map(float, mapMatrix[i]))
+  for redFood in gameState.getRedFood().asList():
+    x = redFood[0]
+    y = mapHeight - 1 - redFood[1]
+    mapMatrix[y][x] = 2.0
+  for redCapsule in gameState.getRedCapsules():
+    if not redCapsule:
+      continue
+    x = redCapsule[0]
+    y = mapHeight - 1 - redCapsule[1]
+    mapMatrix[y][x] = 3.0
+  for blueFood in gameState.getBlueFood().asList():
+    x = blueFood[0]
+    y = mapHeight - 1 - blueFood[1]
+    mapMatrix[y][x] = 4.0
+  for blueCapsule in gameState.getBlueCapsules():
+    if not blueCapsule:
+      continue
+    x = blueCapsule[0]
+    y = mapHeight - 1 - blueCapsule[1]
+    mapMatrix[y][x] = 5.0
+  return mapMatrix

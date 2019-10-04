@@ -378,7 +378,8 @@ def eatOneFood(agent, gameState, index):
   food = agent.getFood(gameState)
   foodList = food.asList()
   pos = gameState.getAgentPosition(index)
-  walls = getActualWalls(agent)
+  walls = gameState.getWalls()
+  #walls = getActualWalls(agent)
   action = minDistance(pos, foodList, walls, agent)
   return action
 
@@ -460,3 +461,310 @@ def foolGhost(agent, gameState, index):
   walls = getWallsWithDeadEnd(agent)
   action = minDistance(pos, ghostList, walls, agent)
   return action
+
+
+class EatOneSafeFoodProblem:
+  def __init__(self, gameState, index, enemyIndices, midX, enemyMidX, midLine, enemyMidLine,agent):
+    self.index = index
+    self.agent = agent
+    self.pacmanPos = gameState.getAgentPosition(index)
+    self.deadEnds = agent.deadEnd
+    self.walls = gameState.getWalls()
+    #for i in self.deadEnds:
+    #  self.walls[i[1]][i[0]] = True
+    # add deadEnd points to walls
+    self.middleX = midX
+    self.enemyMiddleX = enemyMidX
+    self.middleLine = midLine
+    self.enemyMiddleLine = enemyMidLine
+    self.enemyIndices = agent.getOpponents(gameState)
+    self.foods = agent.getFood(gameState)
+    self.foodList = self.foods.asList()
+    self.enemyPositions = []
+    for idx in self.enemyIndices:
+      enemyPos = gameState.getAgentPosition(idx)
+      if enemyPos != None:
+        self.enemyPositions.append(enemyPos)
+    self.enemyPositions = tuple(self.enemyPositions)
+    #self.expandedForbidden = defaultdict(set()) # key is the expanded time
+
+  def getStartState(self, gameState, foodGrid):
+    return (gameState.getAgentPosition(self.index), self.enemyPositions, self.foods,1,0)
+
+  def isGoalState(self, gameState, state):
+    return (len(state[2].asList()) < len(self.foods.asList())) or (state[3]>100)
+
+  def getSuccessors(self, state):
+    successors = []
+    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+      x, y = state[0]
+      expandedForbidden = self.getExpandedForbidden(state[1])
+      newEnemyList = self.getNewEnemyPostion(state[0],expandedForbidden)
+      dx, dy = Actions.directionToVector(direction)
+      nextx, nexty = int(x + dx), int(y + dy)
+      if (not self.walls[nextx][nexty]) and ((nextx,nexty) not in expandedForbidden):#self.testValid((nextx,nexty),state[1],state[3]):
+        # if self.expandedForbidden[state[2]+1] == None:
+        #   self.storeExpandedForbidden(state[2]+1)
+        numDE = state[4]
+        closeDist = 999
+        for enemy in newEnemyList:
+          if not enemy is None:
+            dis = self.agent.getMazeDistance((nextx,nexty),enemy)
+            closeDist = min(closeDist,dis)
+        print("test for deadEnd",(nextx,nexty),self.deadEnds)
+        if ((nexty,nextx) in self.deadEnds):
+            numDE += 1
+        if closeDist-1 > numDE:
+          nextFood = state[2].copy()
+          nextFood[nextx][nexty] = False
+          successors.append((((nextx, nexty), newEnemyList, nextFood, state[3]+1,numDE), direction,1))
+    return successors
+
+  def eatOneSafeHeuristic(self,state):
+    curPos, enemy, foods,step,dead = state
+    minDist = 9999
+    foodList = copy.deepcopy(foods.asList())
+    for food in foodList:
+        dis = self.agent.getMazeDistance(curPos,food)
+        minDist = min(minDist,dis)
+    return minDist
+
+  def getNewEnemyPostion(self,pos,enemyList):
+    newEnemyList = []
+    minDist = 9999
+    for enemy in enemyList:
+      print("enemy",enemy)
+      if not self.walls[enemy[0]][enemy[1]]:
+        dis = self.agent.getMazeDistance(pos,enemy)
+        if dis == minDist:
+          newEnemyList.append((enemy[0],enemy[1]))
+        if dis < minDist:
+          minDist = dis
+          newEnemyList = []
+          newEnemyList.append(enemy)
+    return tuple(newEnemyList)
+
+
+  def testValid(self,pos,enemyList,step):
+    for enemy in enemyList:
+      if self.agent.getMazeDistance(pos,enemy) <= step:
+        return False
+    return True
+
+  def getExpandedForbidden(self,enemyList):
+    expandedForbidden = []
+    for enemy in enemyList:
+      expandedForbidden.append(enemy)
+      (x,y) = enemy
+      for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+        dx, dy = Actions.directionToVector(direction)
+        expandedForbidden.append((int(x+dx),int(y+dy)))
+    return expandedForbidden
+
+def getMiddleLineHeuristic(agent,state):
+  curPos,enemy,foods = state
+  middleLine = agent.middleLine
+  minDist = 9999
+  for mid in middleLine:
+    minDist = min(minDist,agent.getMazeDistance(curPos,mid))
+  return minDist
+
+
+    #
+    # sumFoodDist = 0
+    # closed = [curPos] # food in path calculated
+class EscapeProblem1:
+  def __init__(self, gameState, index, enemyIndices, midX, enemyMidX, midLine, enemyMidLine,agent):
+    self.index = index
+    self.agent = agent
+    self.pacmanPos = gameState.getAgentPosition(index)
+    self.deadEnds = agent.deadEnd
+    self.walls = gameState.getWalls()
+    self.middleX = midX
+    self.enemyMiddleX = enemyMidX
+    self.middleLine = midLine
+    self.enemyMiddleLine = enemyMidLine
+    self.enemyIndices = agent.getOpponents(gameState)
+    self.foods = agent.getFood(gameState)
+    self.foodList = self.foods.asList()
+    self.enemyPositions = []
+    for idx in self.enemyIndices:
+      enemyPos = gameState.getAgentPosition(idx)
+      if enemyPos != None:
+        self.enemyPositions.append(enemyPos)
+    self.enemyPositions = tuple(self.enemyPositions)
+    #self.expandedForbidden = defaultdict(set()) # key is the expanded time
+
+  def getStartState(self, gameState, foodGrid):
+    return (gameState.getAgentPosition(self.index), self.enemyPositions)
+
+  def isGoalState(self, gameState, state):
+    return state[0][0] == self.middleX
+
+  def getSuccessors(self, state):
+    successors = []
+    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+      x, y = state[0]
+      expandedForbidden = self.getExpandedForbidden(state[1])
+      newEnemyList = self.getNewEnemyPostion(state[0],expandedForbidden)
+      dx, dy = Actions.directionToVector(direction)
+      nextx, nexty = int(x + dx), int(y + dy)
+      if (not self.walls[nextx][nexty]) and ((nextx,nexty) not in expandedForbidden):#self.testValid((nextx,nexty),state[1],state[3]):
+        # if self.expandedForbidden[state[2]+1] == None:
+        #   self.storeExpandedForbidden(state[2]+1)
+        nextFood = state[2].copy()
+        nextFood[nextx][nexty] = False
+        successors.append((((nextx, nexty), newEnemyList), direction, 1))
+    return successors
+
+  def EscapeHeuristic(self,state):
+    middleLine = self.agent.middleLine
+    print(state)
+    curPos, enemy = state
+    minDist = 9999
+    for mid in middleLine:
+      minDist = min(minDist,self.agent.getMazeDistance(curPos,mid))
+    return minDist
+
+  def getNewEnemyPostion(self,pos,enemyList):
+    newEnemyList = []
+    minDist = 9999
+    for enemy in enemyList:
+      print("enemy",enemy)
+      if not self.walls[enemy[0]][enemy[1]]:
+        dis = self.agent.getMazeDistance(pos,enemy)
+        if dis == minDist:
+          newEnemyList.append((enemy[0],enemy[1]))
+        if dis < minDist:
+          minDist = dis
+          newEnemyList = []
+          newEnemyList.append(enemy)
+    return tuple(newEnemyList)
+
+
+  def testValid(self,pos,enemyList,step):
+    for enemy in enemyList:
+      if self.agent.getMazeDistance(pos,enemy) <= step:
+        return False
+    return True
+
+  def getExpandedForbidden(self,enemyList):
+    expandedForbidden = []
+    for enemy in enemyList:
+      expandedForbidden.append(enemy)
+      (x,y) = enemy
+      for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+        dx, dy = Actions.directionToVector(direction)
+        expandedForbidden.append((int(x+dx),int(y+dy)))
+    return expandedForbidden
+
+
+class EatOneEscapeProblem:
+  def __init__(self, gameState, index, enemyIndices, midX, enemyMidX, midLine, enemyMidLine,agent):
+    self.index = index
+    self.agent = agent
+    self.pacmanPos = gameState.getAgentPosition(index)
+    self.deadEnds = agent.deadEnd
+    self.walls = gameState.getWalls()
+    #for i in self.deadEnds:
+    #  self.walls[i[1]][i[0]] = True
+    # add deadEnd points to walls
+    self.middleX = midX
+    self.enemyMiddleX = enemyMidX
+    self.middleLine = midLine
+    self.enemyMiddleLine = enemyMidLine
+    self.enemyIndices = agent.getOpponents(gameState)
+    self.foods = agent.getFood(gameState)
+    self.foodList = self.foods.asList()
+    self.enemyPositions = []
+    for idx in self.enemyIndices:
+      enemyPos = gameState.getAgentPosition(idx)
+      if enemyPos != None:
+        self.enemyPositions.append(enemyPos)
+    self.enemyPositions = tuple(self.enemyPositions)
+    #self.expandedForbidden = defaultdict(set()) # key is the expanded time
+
+  def getStartState(self, gameState, foodGrid):
+    return (gameState.getAgentPosition(self.index), self.enemyPositions, self.foods,1)
+
+  def isGoalState(self, gameState, state):
+    return ((state[0][0] == self.middleX) and (len(state[2].asList()) < len(self.foods.asList()))) or (state[3]>10)
+
+  def getSuccessors(self, state):
+    successors = []
+    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+      x, y = state[0]
+      expandedForbidden = self.getExpandedForbidden(state[1])
+      newEnemyList = self.getNewEnemyPostion(state[0],expandedForbidden)
+      dx, dy = Actions.directionToVector(direction)
+      nextx, nexty = int(x + dx), int(y + dy)
+      if (not self.walls[nextx][nexty]) and ((nextx,nexty) not in expandedForbidden):#self.testValid((nextx,nexty),state[1],state[3]):
+        # if self.expandedForbidden[state[2]+1] == None:
+        #   self.storeExpandedForbidden(state[2]+1)
+        nextFood = state[2].copy()
+        nextFood[nextx][nexty] = False
+        successors.append((((nextx, nexty), newEnemyList, nextFood, state[3]+1), direction, 1))
+    return successors
+
+  def eatOneEscapeHeuristic(self,state):
+    middleLine = self.agent.middleLine
+    print(state)
+    curPos, enemy, foods,step = state
+    minDist = 9999
+    foodList = copy.deepcopy(foods.asList())
+    if len(self.foodList) > len(foodList):
+      minDist = 9999
+      for mid in middleLine:
+        minDist = min(minDist,self.agent.getMazeDistance(curPos,mid))
+      return minDist
+    for food in foodList:
+      for mid in middleLine:
+        dis = self.agent.getMazeDistance(curPos,food) + self.agent.getMazeDistance(food,mid)
+        minDist = min(minDist,dis)
+    return minDist
+
+  def getNewEnemyPostion(self,pos,enemyList):
+    newEnemyList = []
+    minDist = 9999
+    for enemy in enemyList:
+      print("enemy",enemy)
+      if not self.walls[enemy[0]][enemy[1]]:
+        dis = self.agent.getMazeDistance(pos,enemy)
+        if dis == minDist:
+          newEnemyList.append((enemy[0],enemy[1]))
+        if dis < minDist:
+          minDist = dis
+          newEnemyList = []
+          newEnemyList.append(enemy)
+    return tuple(newEnemyList)
+
+
+  def testValid(self,pos,enemyList,step):
+    for enemy in enemyList:
+      if self.agent.getMazeDistance(pos,enemy) <= step:
+        return False
+    return True
+
+  def getExpandedForbidden(self,enemyList):
+    expandedForbidden = []
+    for enemy in enemyList:
+      expandedForbidden.append(enemy)
+      (x,y) = enemy
+      for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+        dx, dy = Actions.directionToVector(direction)
+        expandedForbidden.append((int(x+dx),int(y+dy)))
+    return expandedForbidden
+
+def getMiddleLineHeuristic(agent,state):
+  curPos,enemy,foods = state
+  middleLine = agent.middleLine
+  minDist = 9999
+  for mid in middleLine:
+    minDist = min(minDist,agent.getMazeDistance(curPos,mid))
+  return minDist
+
+
+    #
+    # sumFoodDist = 0
+    # closed = [curPos] # food in path calculated
+
