@@ -150,7 +150,7 @@ class AttackAgent(CaptureAgent):
 
   def chooseAction(self, gameState):
     curPos = gameState.getAgentPosition(self.index)
-    print(self.midLine)
+    # print(self.midLine)
     print("=============")
     # initialize attack problem for new gameState
     #TODO: switch to any suitable eat policy[targetFoodNum is determined by the problem]
@@ -177,17 +177,24 @@ class AttackAgent(CaptureAgent):
       close = False
       for enemy in enemyPos:
         if not(enemy is None):
-          close = close or (self.getMazeDistance(curPos,enemy) <= 5)
-      if close:
-        escapeProblem = myProblem.EscapeProblem1(gameState, self)
-        actions = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)
-        print("actions:",actions)
-        return actions[0]
-      if (enemyPos == [None,None]) or (not close):
-        action = myProblem.eatOneFood(self,gameState,self.index)
+          close = close or (self.distancer.getDistance(curPos,enemy) <= 5)
+      if enemyPos == [None, None] and (not close):
+        action = myProblem.eatOneFood(self, gameState, self.index)
+      elif close:
+        # judge enemy is ghost or pacman
+        for enemy in enemyPos:
+          if not (enemy is None) and enemy[0] <= self.midX:  # any one of enemies is ghost
+            action = myProblem.eatClosestEnemyPacman(self, gameState, self.index)
+            return action
+        if curPos[0] < self.midX:
+          action = myProblem.reachOwnMidList(self, gameState, self.index)
+        elif curPos in self.midLine:
+          action = 'Stop'
+        else:
+          escapeProblem = myProblem.EscapeProblem1(gameState, self)
+          action = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)[0]
       else:
         start = time.clock()
-        #problem = myProblem.EatOneEscapeProblem(gameState,self)
         problem = myProblem.EatOneSafeFoodProblem(gameState,self)
         actions = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic)
         elapsed = (time.clock() - start)
@@ -267,7 +274,7 @@ class AttackAgent(CaptureAgent):
       elif sumDistToEnemy == maxDistToEnemy:
         minDistToMid = 999999
         for midPos in self.midLine:
-          newDist = min(newDist, self.getMazeDistance(successor[0][0], midPos))
+          newDist = min(newDist, self.distancer.getDistance(successor[0][0], midPos))
         if minDistToMid < prevMinDistToMid:
           prevMinDistToMid = minDistToMid
           action = successor[1]

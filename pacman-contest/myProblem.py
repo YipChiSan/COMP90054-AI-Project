@@ -8,7 +8,7 @@ class EatOneProblem:
   def __init__(self, gameState, agent):
     # number of food to be eat that is used in policy selection
     # change to be applied in a new heuristic
-    self.targetFoodNum = 1
+    self.targetFoodNum = 1 #TODO: change
     self.agent = agent
     self.index = agent.index
     self.walls = gameState.getWalls()
@@ -23,7 +23,7 @@ class EatOneProblem:
 
   def isGoalState(self, gameState, state):
     return self.carriedFood == self.targetFoodNum
-    # return state[0] in self.middleLine and carriedFood[self.index] == self.targetFoodNum
+    # return state[0] in self.midLine and carriedFood[self.index] == self.targetFoodNum
 
   def getSuccessors(self, state):
     successors = []
@@ -56,7 +56,7 @@ class EatOneProblem:
       minDistToFood = 999999
       for food in foodList:
         for pos in closed:
-          newDist = self.agent.getMazeDistance(pos, food)
+          newDist = self.agent.distancer.getDistance(pos, food)
           if newDist < minDistToFood:
             minDistToFood = newDist
             nearestFoodPos = food
@@ -69,7 +69,7 @@ class EatOneProblem:
     # minDistToMid = 999999
     # for midPos in midAccesses:
     #   for closedPos in closed:
-    #     newDist = self.getMazeDistance(closedPos, midPos)
+    #     newDist = self.distancer.getDistance(closedPos, midPos)
     #     if newDist < minDistToMid:
     #       minDistToMid = newDist
     #
@@ -78,7 +78,7 @@ class EatOneProblem:
     #   if idx != self.index:
     #     tmPos = gameState.getAgentPosition(idx)
     #     # find pos of the other pac man and calculate distance
-    #     distToTm = self.getMazeDistance(curPos, tmPos)
+    #     distToTm = self.distancer.getDistance(curPos, tmPos)
     #     break
 
     # x = 0.4
@@ -130,7 +130,7 @@ class EatWithDeadEndProblem: # default: eat one
       minDistToFood = 999999
       for food in foodList:
         for pos in closed:
-          newDist = self.agent.getMazeDistance(pos, food)
+          newDist = self.agent.distancer.getDistance(pos, food)
           if newDist < minDistToFood:
             minDistToFood = newDist
             nearestFoodPos = food
@@ -177,7 +177,7 @@ class EatCapsuleProblem:
     curPos, capsuleList = state
     minDistToCapsule = 999999
     for capsule in capsuleList:
-      newDist = self.agent.getMazeDistance(curPos, capsule)
+      newDist = self.agent.distancer.getDistance(curPos, capsule)
       if newDist < minDistToCapsule:
         minDistToCapsule = newDist
     return minDistToCapsule
@@ -210,10 +210,10 @@ class ReachMiddleListProblem:
 
   def reachMiddleListHeuristic(self, state):  # reach the side of our own on the middle list
     curPos = state[0]
-    enemyMiddleList = self.agent.enemyMiddleLine
+    enemyMiddleList = self.enemyMiddleLine
     minDistToMid = 999999
     for midPoint in enemyMiddleList:
-      newDist = self.agent.getMazeDistance(curPos, midPoint)
+      newDist = self.agent.distancer.getDistance(curPos, midPoint)
       if newDist < minDistToMid:
         minDistToMid = newDist
     return minDistToMid
@@ -249,7 +249,7 @@ class BackToMiddleListProblem:
     middleList = self.middleLine
     minDistToMid = 999999
     for midPoint in middleList:
-      newDist = self.agent.getMazeDistance(curPos, midPoint)
+      newDist = self.agent.distancer.getDistance(curPos, midPoint)
       if newDist < minDistToMid:
         minDistToMid = newDist
     return minDistToMid
@@ -335,7 +335,7 @@ class EscapeProblem:
     middleList = self.middleLine
     minDistToMid = 999999
     for midPoint in middleList:
-      newDist = self.agent.getMazeDistance(curPos, midPoint)
+      newDist = self.agent.distancer.getDistance(curPos, midPoint)
       if newDist < minDistToMid:
         minDistToMid = newDist
     return minDistToMid
@@ -389,7 +389,7 @@ class EatOneSafeFoodProblem:
           closeDist = 999
           for enemy in newEnemyPositions:
             if not enemy is None:
-              dis = self.agent.getMazeDistance((nextx,nexty),enemy)
+              dis = self.agent.distancer.getDistance((nextx,nexty),enemy)
               closeDist = min(closeDist,dis)
           print("test for deadEnd",(nextx,nexty),self.deadEnds)
           if ((nexty,nextx) in self.deadEnds):
@@ -405,7 +405,7 @@ class EatOneSafeFoodProblem:
     minDist = 9999
     foodList = copy.deepcopy(foods.asList())
     for food in foodList:
-        dis = self.agent.getMazeDistance(curPos,food)
+        dis = self.agent.distancer.getDistance(curPos,food)
         minDist = min(minDist,dis)
     return minDist
 
@@ -439,7 +439,7 @@ class EatOneSafeFoodProblem:
       for enemy in enemySet:
         # print("enemy",enemy)
         if not self.walls[enemy[0]][enemy[1]]:
-          dis = self.agent.getMazeDistance(pos,enemy)
+          dis = self.agent.distancer.getDistance(pos,enemy)
           if dis == minDist:
             enemyExpansion.add(enemy)
           if dis < minDist:
@@ -451,7 +451,7 @@ class EatOneSafeFoodProblem:
 
   def testValid(self,pos,enemyList,step):
     for enemy in enemyList:
-      if self.agent.getMazeDistance(pos,enemy) <= step:
+      if self.agent.distancer.getDistance(pos,enemy) <= step:
         return False
     return True
 
@@ -460,7 +460,7 @@ class EatOneSafeFoodProblem:
     distList = []
     for enemyPos in self.enemyPositions:
       if enemyPos != None:
-        distList.append(self.agent.getMazeDistance(enemyPos, curPos))
+        distList.append(self.agent.distancer.getDistance(enemyPos, curPos))
     return distList
 
 class EscapeProblem1:
@@ -510,7 +510,7 @@ class EscapeProblem1:
     curPos, enemy = state
     minDist = 9999
     for mid in middleLine:
-      minDist = min(minDist,self.agent.getMazeDistance(curPos,mid))
+      minDist = min(minDist,self.agent.distancer.getDistance(curPos,mid))
     return minDist
 
   def getExpandedForbidden(self,enemySet):
@@ -543,7 +543,7 @@ class EscapeProblem1:
       for enemy in enemySet:
         # print("enemy",enemy)
         if not self.walls[enemy[0]][enemy[1]]:
-          dis = self.agent.getMazeDistance(pos,enemy)
+          dis = self.agent.distancer.getDistance(pos,enemy)
           if dis == minDist:
             enemyExpansion.add(enemy)
           if dis < minDist:
@@ -555,7 +555,7 @@ class EscapeProblem1:
 
   def testValid(self,pos,enemyList,step):
     for enemy in enemyList:
-      if self.agent.getMazeDistance(pos,enemy) <= step:
+      if self.agent.distancer.getDistance(pos,enemy) <= step:
         return False
     return True
 
@@ -564,7 +564,7 @@ class EscapeProblem1:
     distList = []
     for enemyPos in self.enemyPositions:
       if enemyPos != None:
-       distList.append(self.agent.getMazeDistance(enemyPos, curPos))
+       distList.append(self.agent.distancer.getDistance(enemyPos, curPos))
     return distList
 
 class EatOneEscapeProblem:
@@ -622,11 +622,11 @@ class EatOneEscapeProblem:
     if len(self.foodList) > len(foodList):
       minDist = 9999
       for mid in middleLine:
-        minDist = min(minDist,self.agent.getMazeDistance(curPos,mid))
+        minDist = min(minDist,self.agent.distancer.getDistance(curPos,mid))
       return minDist
     for food in foodList:
       for mid in middleLine:
-        dis = self.agent.getMazeDistance(curPos,food) + self.agent.getMazeDistance(food,mid)
+        dis = self.agent.distancer.getDistance(curPos,food) + self.agent.distancer.getDistance(food,mid)
         minDist = min(minDist,dis)
     return minDist
 
@@ -636,7 +636,7 @@ class EatOneEscapeProblem:
     for enemy in enemyList:
       print("enemy",enemy)
       if not self.walls[enemy[0]][enemy[1]]:
-        dis = self.agent.getMazeDistance(pos,enemy)
+        dis = self.agent.distancer.getDistance(pos,enemy)
         if dis == minDist:
           newEnemyList.append((enemy[0],enemy[1]))
         if dis < minDist:
@@ -648,7 +648,7 @@ class EatOneEscapeProblem:
 
   def testValid(self,pos,enemyList,step):
     for enemy in enemyList:
-      if self.agent.getMazeDistance(pos,enemy) <= step:
+      if self.agent.distancer.getDistance(pos,enemy) <= step:
         return False
     return True
 
@@ -667,18 +667,18 @@ class EatOneEscapeProblem:
     distList = []
     for enemyPos in self.enemyPositions:
       if enemyPos != None:
-       distList.append(self.agent.getMazeDistance(enemyPos, curPos))
+       distList.append(self.agent.distancer.getDistance(enemyPos, curPos))
     return distList
 
-def getActualWalls(agent):
-  walls = agent.getWalls()
+def getActualWalls(gameState):
+  walls = gameState.getWalls()
   return walls
 
 def getWallsWithDeadEnd(agent):
   walls = agent.walls
   deadEnds = agent.deadEnd
-  for pos in deadEnds:
-    walls[pos[0]][pos[1]] = True
+  for pos in deadEnds: # x y of deadEnd is reversed
+    walls[pos[1]][pos[0]] = True
   return walls
 
 #find shortest path, to any pos in posList
@@ -691,7 +691,7 @@ def minDistance(pos, posList, walls, agent):
     nextx, nexty = int(x + dx), int(y + dy)
     if not walls[nextx][nexty]:
       for target in posList:
-        dist = agent.getMazeDistance((nextx, nexty), target)
+        dist = agent.distancer.getDistance((nextx, nexty), target)
         if dist < minDist:
           minDist = dist
           action = direction
@@ -709,7 +709,7 @@ def eatOneFood(agent, gameState, index):
   foodList = food.asList()
   pos = gameState.getAgentPosition(index)
   walls = gameState.getWalls()
-  #walls = getActualWalls(agent)
+  #walls = getActualWalls(gameState)
   action = minDistance(pos, foodList, walls, agent)
   return action
 
@@ -723,26 +723,26 @@ def eatFoodOutsideDeadEnd(agent, gameState, index):
 def eatCapsule(agent, gameState, index):
   capsuleList = agent.getCapsules()
   pos = gameState.getAgentPosition(index)
-  walls = getActualWalls(agent)
+  walls = getActualWalls(gameState)
   action = minDistance(pos, capsuleList, walls, agent)
   return action
 
 def reachOwnMidList(agent, gameState, index):
-  middleList = agent.middleLine
+  middleList = agent.midLine
   pos = gameState.getAgentPosition(index)
-  walls = getActualWalls(agent)
+  walls = getActualWalls(gameState)
   action = minDistance(pos, middleList, walls, agent)
   return action
 
 def reachEnemyMidList(agent, gameState, index):
-  enemyMiddleList = agent.enemyMiddleLine
+  enemyMiddleList = agent.enemyMidLine
   pos = gameState.getAgentPosition(index)
-  walls = getActualWalls(agent)
+  walls = getActualWalls(gameState)
   action = minDistance(pos, enemyMiddleList, walls, agent)
   return action
 
 def eatFoodClosestToMidList(agent, gameState, index):
-  midList = agent.middleLine
+  midList = agent.midLine
   foodList = getFoodExceptDeadEnds(agent, gameState)
   pos = gameState.getAgentPosition(index)
   walls = getWallsWithDeadEnd(agent)
@@ -751,7 +751,7 @@ def eatFoodClosestToMidList(agent, gameState, index):
     x, y = midPos
     if not walls[x][y]:
       for target in foodList:
-        dist = agent.getMazeDistance((x, y), target)
+        dist = agent.distancer.getDistance((x, y), target)
         if dist < minDist:
           minDist = dist
           minDistFoodPos = target
@@ -768,6 +768,23 @@ def eatClosestGhost(agent, gameState, index):
   pos = gameState.getAgentPosition(index)
   walls = getWallsWithDeadEnd(agent)
   action = minDistance(pos, ghostList, walls, agent)
+  return action
+
+def eatClosestEnemyPacman(agent, gameState, index):
+  enemyIndices = agent.getOpponents(gameState)
+  enemyList = []
+  for idx in enemyIndices:
+    enemyPos = gameState.getAgentPosition(idx)
+    if enemyPos != None:
+      if agent.red:
+        if enemyPos[0] <= agent.midX:
+          enemyList.append(enemyPos)
+      else:
+        if enemyPos[0] >= agent.enemyMidX:
+          enemyList.append(enemyPos)
+  pos = gameState.getAgentPosition(index)
+  walls = getWallsWithDeadEnd(agent)
+  action = minDistance(pos, enemyList, walls, agent)
   return action
 
 def eatFarthestFoodFromGhost(agent, gameState, index):
