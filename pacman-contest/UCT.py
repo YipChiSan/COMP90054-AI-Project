@@ -12,7 +12,8 @@ class State:
 
 def randomPolicy(state):
     reward = 0
-    for i in range(0, 10):
+    # for i in range(0, 10):
+    while not state.isTerminal():
         try:
             action = random.choice(state.getPossibleActions())
         except IndexError:
@@ -25,7 +26,7 @@ def randomPolicy(state):
 class treeNode():
     def __init__(self, state, parent):
         self.state = state
-        self.isTerminal = False
+        self.isTerminal = state.isTerminal()
         self.isFullyExpanded = self.isTerminal
         self.parent = parent
         self.numVisits = 0
@@ -101,9 +102,11 @@ class mcts():
     def getBestChild(self, node, explorationValue):
         bestValue = float("-inf")
         bestNodes = []
+        print("=================")
         for child in node.children.values():
             nodeValue = child.totalReward / child.numVisits + explorationValue * math.sqrt(
                 2 * math.log(node.numVisits) / child.numVisits)
+            print(child.numVisits)
             if nodeValue > bestValue:
                 bestValue = nodeValue
                 bestNodes = [child]
