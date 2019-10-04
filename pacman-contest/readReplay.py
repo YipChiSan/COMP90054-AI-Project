@@ -20,12 +20,10 @@ def generateLayoutFile(replayDir, replayLayoutsDir):
 
 def rerunReplayGame(replayFileName, actions):
     layoutPath = '.' + replayLayoutsDir + '/' + replayFileName + '.capture.lay'
-    # redActions = [action for i, action in enumerate(actions) if not action[0] & 1]
-    # blueActions = [action for i, action in enumerate(actions) if action[0] & 1]
     with open('./replayAgentActions','wb') as f:
         f.write(pickle.dumps(actions))
 
-    os.system('python capture.py -l {} -r replayAgent  -b replayAgent'.format(layoutPath))
+    os.system('python capture.py -l {} -z 0.6 -r replayAgent  -b replayAgent'.format(layoutPath))
 
 """
 $ python readReplay.py

@@ -1,5 +1,3 @@
-from __future__ import division
-
 import time
 import math
 import random
@@ -13,19 +11,21 @@ class State:
 
 
 def randomPolicy(state):
-    while not state.isTerminal():
+    reward = 0
+    for i in range(0, 10):
         try:
             action = random.choice(state.getPossibleActions())
         except IndexError:
             raise Exception("Non-terminal state has no possible actions: " + str(state))
         state = state.takeAction(action)
-    return state.getReward()
-
+        reward += state.getReward()
+    print(reward)
+    return reward
 
 class treeNode():
     def __init__(self, state, parent):
         self.state = state
-        self.isTerminal = state.isTerminal()
+        self.isTerminal = False
         self.isFullyExpanded = self.isTerminal
         self.parent = parent
         self.numVisits = 0
