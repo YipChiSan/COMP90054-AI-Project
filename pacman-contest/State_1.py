@@ -16,7 +16,7 @@ class State_1:
         #  'getScore', 'getWalls', 'hasFood', 'hasWall', 'initialize', 'isOnRedTeam', 'isOver', 'isRed', 'makeObservation',
         #  'redTeam', 'teams']
 
-    def getState_1(self, initState):
+    def getCurrentState(self, initState):
         myIndex = self.Agent.index
         teammateIndex = self.getIndex(2)
         firstEnemyIndex = self.getIndex(1)
@@ -138,7 +138,7 @@ class State_1:
         # 我方到离敌人最近豆子到距离
         distanceToEnemyNearestFood = min(self.Agent.getMazeDistance(myCurPosition, __enemyNearestFoodAndDistance[1]), self.Agent.getMazeDistance(teammateCurPosition, __enemyNearestFoodAndDistance[1])) if __enemyNearestFoodAndDistance[1] else 99999
 
-        self.currentState = [
+        currentState = [
             score,
             timeleft,
             isRed,
@@ -182,7 +182,7 @@ class State_1:
             distanceToEnemyNearestFood
         ]
 
-        return self.currentState
+        return currentState
         ################################################################################################################
 
 
