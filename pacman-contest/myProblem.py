@@ -466,6 +466,9 @@ class EscapeProblem1:
     self.enemyPositions = tuple(self.enemyPositions)
 
   def getStartState(self, gameState, foodGrid):
+    # enemyPosDict = defaultdict(set)
+    # for idx, enemy in enumerate(self.enemyPositions):
+    #   enemyPosDict[idx] = {enemy}
     return (gameState.getAgentPosition(self.index), self.enemyPositions)
 
   def isGoalState(self, gameState, state):
