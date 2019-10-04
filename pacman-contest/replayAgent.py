@@ -41,7 +41,7 @@ class MCTsAgent(CaptureAgent):
         legalActions = gameState.getLegalActions(self.index)
         for action in legalActions:
             nextState = mcts.getNextState(currentState, action)
-            print(action, nextState)
+            print(action, nextState) if self.index == 0 else None
         print('-'*30)
         ##################################################################
         return self.action.pop(0)[1]

@@ -57,10 +57,10 @@ class State_2:
         if enemyFood[nextX][nextY]:
             nextEnemyFood[nextX][nextY] = False
             if self.Agent.red:
-                if nextX < middleLineX:
+                if nextX > middleLineX:
                     nextFoodCarrying = nextFoodCarrying + 1
             else:
-                if nextX > middleLineX:
+                if nextX < middleLineX:
                     nextFoodCarrying = nextFoodCarrying + 1
 
         nextState = [

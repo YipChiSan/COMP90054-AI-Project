@@ -23,7 +23,7 @@ def rerunReplayGame(replayFileName, actions):
     with open('./replayAgentActions','wb') as f:
         f.write(pickle.dumps(actions))
 
-    os.system('python capture.py -l {} -z 0.3 -r replayAgent  -b replayAgent'.format(layoutPath))
+    os.system('python capture.py -l {} -z 0.6 -r replayAgent  -b replayAgent'.format(layoutPath))
 
 """
 $ python readReplay.py
