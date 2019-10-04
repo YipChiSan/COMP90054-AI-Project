@@ -223,7 +223,7 @@ class AttackAgent(CaptureAgent):
     prevGameState = self.getPreviousObservation()
     if prevGameState != None:
       if (prevGameState.getAgentPosition(self.index)[0] - self.middleX) * (curPos[0] - self.middleX) < 0:
-        print("pacman ",self.index," died!")# TODO：有时死了不会清零
+        # print("pacman ",self.index," died!")# TODO：有时死了不会清零
         carriedFood[self.index] = 0
 
     #TODO: use getAgentPosition(enemy.index) to judge if ghost is within agent's sight:
@@ -231,44 +231,34 @@ class AttackAgent(CaptureAgent):
     if self.red:
       # TODO: if ghost in sight of 5 real distance, go back to middleLine[consider midline and ghost]
       #   if distance to middle list smaller than distance to the closest ghost
-      print("test if go back branch can be reached, carriedFood for",self.index,":",carriedFood[self.index])
-      print("curPos",curPos)
       if carriedFood[self.index] >= attackProblem.targetFoodNum:
         if curPos[0] <= self.middleX:
-          print("test if go back branch can be reached - if")
           carriedFood[self.index] = 0
         else:
           #go back to midline
-          print("test if go back branch can be reached - else")
           backToMiddleListProblem = BackToMiddleListProblem(gameState, self.index, self.middleX, self.enemyMiddleX, self.middleLine, self.enemyMiddleLine)
           return self.aStarSearch(backToMiddleListProblem, gameState, self.backToMiddleListHeuristic)[0]
       # else: # need to eat more food
         #go across the middle line
       if curPos[0] <= self.middleX:
-        print("go to middle line to start searching, agent index:", self.index, "carriedFood:", carriedFood[self.index])
         reachMiddleListProblem = ReachMiddleListProblem(gameState, self.index, self.middleX, self.enemyMiddleX, self.middleLine, self.enemyMiddleLine)
         return self.aStarSearch(reachMiddleListProblem, gameState, self.reachMiddleListHeuristic)[0]
       else: # search for more food
-        print("search for food, agent index:", self.index, "carriedFood:", carriedFood[self.index])
         action = self.aStarSearch(attackProblem, gameState, self.eatOneHeuristic)[0]
         # action = self.aStarSearch(eatOneProblem, gameState, self.eatOneHeuristic)[0]
         dx, dy = game.Actions.directionToVector(action)
-        print("dx:",dx,"dy:",dy)
         # getFood是到达点后更新过的list，curPos永远不会在里面
         if (curPos[0]+dx,curPos[1]+dy) in self.getFood(gameState).asList():
-          print("find a food")
           carriedFood[self.index] += 1 # manually update carried food number
         return action
     else: # pac man is of blue side
       # TODO: if ghost in sight of 5 real distance, go back to middleLine[consider midline and ghost]
       #   if distance to middle list smaller than distance to the closest ghost
-      print("test if go back branch can be reached, carriedFood for",self.index,":",carriedFood[self.index])
       if carriedFood[self.index] >= attackProblem.targetFoodNum:
         if curPos[0] >= self.middleX:
           carriedFood[self.index] = 0
         else:
           #go back to midline
-          print("test if go back branch can be reached")
           backToMiddleListProblem = BackToMiddleListProblem(gameState, self.index, self.middleX, self.enemyMiddleX, self.middleLine, self.enemyMiddleLine)
           return self.aStarSearch(backToMiddleListProblem, gameState, self.backToMiddleListHeuristic)[0]
       # else: # need to eat more food
