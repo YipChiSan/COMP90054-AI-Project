@@ -9,14 +9,11 @@ class MCTsAgent(CaptureAgent):
 
     def registerInitialState(self, gameState):
         CaptureAgent.registerInitialState(self, gameState)
-        # self.agentActions = pickle.load(open('./replayAgentActions','rb'), encoding="bytes")
-        # self.action = [action for i, action in enumerate(self.agentActions) if self.index == action[0]]
         self.test = mcts(timeLimit=800)
+        # self.test = mcts(iterationLimit=100)
 
     def chooseAction(self, gameState):
-        score = gameState.getScore()
-        t = State_2(self, gameState, 0, 0)
-        print('-'*40)
+        t = State_2(self.red, self.index, self.getMazeDistance, gameState, 0, 0)
         return self.test.search(t)
 
         ##################################################################
