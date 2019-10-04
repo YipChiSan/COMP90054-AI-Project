@@ -109,7 +109,7 @@ class State_1:
         distanceToEnemyMiddleLine = min(map(lambda x: self.Agent.getMazeDistance(myCurPosition, x), initState['enemyMiddleLine']))
 
         # 自己距离敌方最近capsule的距离
-        distanceToEnemyCapsule = min(map(lambda x: self.Agent.getMazeDistance(myCurPosition, x), enemyCapsules)) if enemyCapsules else 99999
+        distanceToEnemyCapsule = min(map(lambda x: self.Agent.getMazeDistance(myCurPosition, x), enemyCapsules)) if enemyCapsules else 999999
         # 第一个敌人距离我方capsule的最近距离
         distanceFromFirstEnemyToOurCapsule = min(map(lambda x: self.Agent.getMazeDistance(firstEnemyCurPosition, x), ourCapsules)) if firstEnemyCurPosition and ourCapsules else 99999
         # 第二个敌人距离我方capsule的最近距离
@@ -136,7 +136,7 @@ class State_1:
         # 敌人到我方豆子最近到豆子(如果可见到话), 坐标从左上角开始
         distanceFromEnemyToOurFood = __enemyNearestFoodAndDistance[0]
         # 我方到离敌人最近豆子到距离
-        distanceToEnemyNearestFood = min(self.Agent.getMazeDistance(myCurPosition, __enemyNearestFoodAndDistance[1]), self.Agent.getMazeDistance(teammateCurPosition, __enemyNearestFoodAndDistance[1])) if __enemyNearestFoodAndDistance[1] else 99999
+        distanceToEnemyNearestFood = min(self.Agent.getMazeDistance(myCurPosition, __enemyNearestFoodAndDistance[1]), self.Agent.getMazeDistance(teammateCurPosition, __enemyNearestFoodAndDistance[1])) if __enemyNearestFoodAndDistance[1] else 999999
 
         currentState = [
             score,
@@ -193,11 +193,11 @@ class State_1:
         return new_index
 
     def getEnemyNearestFood(self, getMazeDistance, ourFood, firstEnemyCurPosition, secondEnemyCurPosition):
-        minDistance = 99999
+        minDistance = 999999
         minFood = None
         for i, food in enumerate(ourFood.asList()):
-            dis1 = getMazeDistance(firstEnemyCurPosition, food) if firstEnemyCurPosition else 99999
-            dis2 = getMazeDistance(secondEnemyCurPosition, food) if secondEnemyCurPosition else 99999
+            dis1 = getMazeDistance(firstEnemyCurPosition, food) if firstEnemyCurPosition else 999999
+            dis2 = getMazeDistance(secondEnemyCurPosition, food) if secondEnemyCurPosition else 999999
             dis = min(dis1, dis2)
             if dis < minDistance:
                 minDistance = dis

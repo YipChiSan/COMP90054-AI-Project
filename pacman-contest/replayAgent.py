@@ -1,7 +1,7 @@
 from captureAgents import CaptureAgent
 import pickle
 
-def createTeam(firstIndex, secondIndex, isRed, first = 'MCTsAgent', second = 'MCTsAgent'):
+def createTeam(firstIndex, secondIndex, isRed, first = 'RecordAgent', second = 'RecordAgent'):
     return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
 class RecordAgent(CaptureAgent):
@@ -24,17 +24,5 @@ class RecordAgent(CaptureAgent):
 
         # STEP 4: Append each row to a list (?)
         print(row) if len(row) > len(currentState) else None
-        ##################################################################
-        return self.action.pop(0)[1]
-
-class MCTsAgent(CaptureAgent):
-    # STEP 1: import
-    from State_2 import State_2
-    def registerInitialState(self, gameState):
-        CaptureAgent.registerInitialState(self, gameState)
-        self.agentActions = pickle.load(open('./replayAgentActions','rb'), encoding="bytes")
-        self.action = [action for i, action in enumerate(self.agentActions) if self.index == action[0]]
-
-    def chooseAction(self, gameState):
         ##################################################################
         return self.action.pop(0)[1]
