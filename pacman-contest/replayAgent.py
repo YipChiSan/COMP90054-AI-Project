@@ -36,12 +36,5 @@ class MCTsAgent(CaptureAgent):
         self.action = [action for i, action in enumerate(self.agentActions) if self.index == action[0]]
 
     def chooseAction(self, gameState):
-        mcts = self.State_2(self, gameState)
-        currentState = mcts.getCurrentState()
-        legalActions = gameState.getLegalActions(self.index)
-        for action in legalActions:
-            nextState = mcts.getNextState(currentState, action)
-            print(action, nextState) if self.index == 0 else None
-        print('-'*30)
         ##################################################################
         return self.action.pop(0)[1]
