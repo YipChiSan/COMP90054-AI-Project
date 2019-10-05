@@ -1,8 +1,11 @@
 import copy
 
+import myTeam
 from myTeam import *
 from game import *
 from collections import defaultdict
+
+timeExceed = False
 
 class EatOneProblem:
   def __init__(self, gameState, agent):
@@ -343,6 +346,8 @@ class EscapeProblem:
 
 class EatOneSafeFoodProblem:
   def __init__(self, gameState, agent):
+    global timeExceed
+    timeExceed = False
     self.index = agent.index
     self.agent = agent
     self.pacmanPos = gameState.getAgentPosition(self.index)
@@ -370,6 +375,9 @@ class EatOneSafeFoodProblem:
     return (gameState.getAgentPosition(self.index), self.enemyPositions, self.foods,1,0)
 
   def isGoalState(self, gameState, state):
+    global timeExceed
+    if state[3]>100:
+      timeExceed = True
     return (len(state[2].asList()) < len(self.foods.asList())) or (state[3]>100)
 
   def getSuccessors(self, state):
@@ -697,6 +705,30 @@ def minDistance(pos, posList, walls, agent):
           action = direction
   return action
 
+#find shortest path, to any pos in posList
+# def minDistanceToFarthestFood(pos, posList, walls, agent):
+#   maxDist = 0
+#   x, y = pos
+#   foodPos = posList[0]
+#   for target in posList:
+#     dist = agent.distancer.getDistance((x, y), target)
+#     if dist > maxDist:
+#       maxDist = dist
+#       foodPos = target
+#
+#   minDist = 9999
+#   action = Directions.NORTH
+#   for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
+#     x, y = pos
+#     dx, dy = Actions.directionToVector(direction)
+#     nextx, nexty = int(x + dx), int(y + dy)
+#     if not walls[nextx][nexty]:
+#       dist = agent.distancer.getDistance((nextx, nexty), foodPos)
+#       if dist < minDist:
+#         minDist = dist
+#         action = direction
+#   return action
+
 def getFoodExceptDeadEnds(agent, gameState):
   food = agent.getFood(gameState)
   for pos in agent.deadEnd:
@@ -704,7 +736,7 @@ def getFoodExceptDeadEnds(agent, gameState):
   foodList = food.asList()
   return foodList
 
-def eatOneFood(agent, gameState, index):
+def eatCloseFood(agent, gameState, index):
   food = agent.getFood(gameState)
   foodList = food.asList()
   pos = gameState.getAgentPosition(index)
@@ -712,6 +744,15 @@ def eatOneFood(agent, gameState, index):
   #walls = getActualWalls(gameState)
   action = minDistance(pos, foodList, walls, agent)
   return action
+
+# def eatFarthestFood(agent, gameState, index):
+#   food = agent.getFood(gameState)
+#   foodList = food.asList()
+#   pos = gameState.getAgentPosition(index)
+#   walls = gameState.getWalls()
+#   #walls = getActualWalls(gameState)
+#   action = minDistanceToFarthestFood(pos, foodList, walls, agent)
+#   return action
 
 def eatFoodOutsideDeadEnd(agent, gameState, index):
   foodList = getFoodExceptDeadEnds(agent, gameState)
@@ -725,6 +766,15 @@ def eatCapsule(agent, gameState, index):
   pos = gameState.getAgentPosition(index)
   walls = getActualWalls(gameState)
   action = minDistance(pos, capsuleList, walls, agent)
+  return action
+
+# reach the top middleLine position
+def reachSpecificEnemyMidPos(agent, gameState, index):
+  middleList = agent.enemyMidLine
+  topMidPos = [middleList[0]]
+  pos = gameState.getAgentPosition(index)
+  walls = getActualWalls(gameState)
+  action = minDistance(pos, topMidPos, walls, agent)
   return action
 
 def reachOwnMidList(agent, gameState, index):
@@ -808,3 +858,22 @@ def foolGhost(agent, gameState, index):
   walls = getWallsWithDeadEnd(agent)
   action = minDistance(pos, ghostList, walls, agent)
   return action
+
+# used when in stalemate
+def breakStalemate(agent, gameState, index):
+  x, y = gameState.getAgentPosition(index)
+  if agent.red: # red team back to left
+    for direction in [Directions.WEST, Directions.NORTH, Directions.SOUTH, Directions.EAST]:
+      dx, dy = Actions.directionToVector(direction)
+      nextx, nexty = int(x + dx), int(y + dy)
+      walls = getActualWalls(gameState)
+      if not walls[nextx][nexty]:
+        return direction
+  else: # blue team back to right
+    for direction in [Directions.EAST, Directions.NORTH, Directions.SOUTH, Directions.WEST]:
+      dx, dy = Actions.directionToVector(direction)
+      nextx, nexty = int(x + dx), int(y + dy)
+      walls = getActualWalls(gameState)
+      if not walls[nextx][nexty]:
+        return direction
+

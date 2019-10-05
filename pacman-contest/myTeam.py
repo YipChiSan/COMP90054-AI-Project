@@ -151,10 +151,10 @@ class AttackAgent(CaptureAgent):
   def chooseAction(self, gameState):
     curPos = gameState.getAgentPosition(self.index)
     # print(self.midLine)
-    print("=============")
+    # print("=============")
+
     # initialize attack problem for new gameState
-    #TODO: switch to any suitable eat policy[targetFoodNum is determined by the problem]
-    attackProblem = myProblem.EatOneProblem(gameState, self)
+    # attackProblem = myProblem.EatOneProblem(gameState, self)
     # """judge if the pac man died in last turn to reset carriedFood value"""
     # prevGameState = self.getPreviousObservation()
     # if prevGameState != None:
@@ -163,13 +163,6 @@ class AttackAgent(CaptureAgent):
     #     carriedFood[self.index] = 0
 
     if self.red:
-      if gameState.data.agentStates[self.index].numCarrying >= attackProblem.targetFoodNum:
-        #go back to midline
-        # escapeProblem = myProblem.EscapeProblem1(gameState, self)
-        # return self.aStarSearch(escapeProblem,gameState,escapeProblem.EscapeHeuristic)[0]
-        backToMiddleListProblem = myProblem.BackToMiddleListProblem(gameState, self)
-        return self.aStarSearch(backToMiddleListProblem, gameState, backToMiddleListProblem.backToMiddleListHeuristic)[0]
-      #fixme:
       enemyIndices = self.getOpponents(gameState)
       enemyPos = []
       for idx in enemyIndices:
@@ -178,8 +171,27 @@ class AttackAgent(CaptureAgent):
       for enemy in enemyPos:
         if not(enemy is None):
           close = close or (self.distancer.getDistance(curPos,enemy) <= 5)
-      if enemyPos == [None, None] and (not close):
-        action = myProblem.eatOneFood(self, gameState, self.index)
+      if enemyPos == [None, None] or (not close):
+        # if curPos[0] <= self.midX:
+        #   if self.index//2 != 0:
+        #     action = myProblem.reachSpecificEnemyMidPos(self, gameState, self.index)
+        #   else:
+        #     action = myProblem.reachEnemyMidList(self, gameState, self.index)
+        # elif gameState.data.agentStates[self.index].numCarrying >= 10:
+        if gameState.data.agentStates[self.index].numCarrying >= 10:
+        # fixme: hardcoded number of food to eat
+          # go back to midline
+          action = myProblem.reachOwnMidList(self, gameState, self.index)
+          # backToMiddleListProblem = myProblem.BackToMiddleListProblem(gameState, self)
+          # action = self.aStarSearch(backToMiddleListProblem, gameState, backToMiddleListProblem.backToMiddleListHeuristic)[0]
+        else:
+          # TODO: separate two pacman, 不会写！！！！！！！！！！！
+          # if self.index//2 != 0:
+          #   print(1)
+          #   action = myProblem.eatFarthestFood(self, gameState, self.index)
+          # else:
+          #   print(2)
+          action = myProblem.eatCloseFood(self, gameState, self.index)
       elif close:
         # judge enemy is ghost or pacman
         for enemy in enemyPos:
@@ -189,7 +201,7 @@ class AttackAgent(CaptureAgent):
         if curPos[0] < self.midX:
           action = myProblem.reachOwnMidList(self, gameState, self.index)
         elif curPos in self.midLine:
-          action = 'Stop'
+          action = myProblem.breakStalemate(self, gameState, self.index)
         else:
           escapeProblem = myProblem.EscapeProblem1(gameState, self)
           action = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)[0]
@@ -197,17 +209,22 @@ class AttackAgent(CaptureAgent):
         start = time.clock()
         problem = myProblem.EatOneSafeFoodProblem(gameState,self)
         actions = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic)
-        elapsed = (time.clock() - start)
-        print("Time used:",elapsed)
         if actions == None:
           action = "Stop"#myProblem.eatOneFood(self,gameState,self.index)
         else:
-          action = actions[0]
+          if myProblem.timeExceed:
+            escapeProblem = myProblem.EscapeProblem1(gameState, self)
+            action = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)[0]
+          else:
+            action = actions[0]
+        elapsed = (time.clock() - start)
+        print("Time used:",elapsed)
       # dx, dy = game.Actions.directionToVector(action)
       # if (curPos[0]+dx,curPos[1]+dy) in self.getFood(gameState).asList():
       #   carriedFood[self.index] += 1 # manually update carried food number
       return action
-    else: # pac man is of blue side
+    #TODO: pac man is of blue side
+    else:
       if gameState.data.agentStates[self.index].numCarrying >= attackProblem.targetFoodNum:
         #go back to midline
         backToMiddleListProblem = myProblem.BackToMiddleListProblem(gameState, self)
@@ -230,8 +247,6 @@ class AttackAgent(CaptureAgent):
 
     while not frontier.isEmpty():
       current_node = frontier.pop()
-      print("index:", self.index)
-      print("next node:", current_node)
       if current_node[0] in best_g.keys():  # reopen
         if best_g[current_node[0]] > current_node[2]:
           best_g[current_node[0]] = current_node[2]
@@ -244,7 +259,6 @@ class AttackAgent(CaptureAgent):
         best_g[current_node[0]] = current_node[2]
         visited.add(current_node[0])
         if problem.isGoalState(gameState, current_node[0]):
-          print("reach goal, direction:",current_node)
           return current_node[1]
         else:
           for successor in problem.getSuccessors(current_node[0]):
@@ -257,6 +271,7 @@ class AttackAgent(CaptureAgent):
     return self.forcedReturn(problem, start_node[0])
 
   def forcedReturn(self, problem, state):
+    print("enter forcedReturn")
     #fixme: currently used for escape heuristic
     maxDistToEnemy = 0
     prevMinDistToMid = 999999
@@ -271,10 +286,12 @@ class AttackAgent(CaptureAgent):
         maxDistToEnemy = sumDistToEnemy
         action = successor[1]
         prevMinDistToMid = 999999
+        for midPos in self.midLine:
+          prevMinDistToMid = min(prevMinDistToMid, self.distancer.getDistance(successor[0][0], midPos))
       elif sumDistToEnemy == maxDistToEnemy:
         minDistToMid = 999999
         for midPos in self.midLine:
-          newDist = min(newDist, self.distancer.getDistance(successor[0][0], midPos))
+          minDistToMid = min(minDistToMid, self.distancer.getDistance(successor[0][0], midPos))
         if minDistToMid < prevMinDistToMid:
           prevMinDistToMid = minDistToMid
           action = successor[1]
