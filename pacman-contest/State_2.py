@@ -1,16 +1,28 @@
 class State_2:
 
-    def __init__(self, isRed, index, getMazeDistance, gameState, score, foodCarrying):
+    def __init__(self,
+                 gameState,
+                 score,
+                 foodCarrying,
+                 index,
+                 isRed,
+                 enemyFoodList,
+                 getDistance,
+                 middleLineX,
+                 ourMiddleLine,
+                 wallList):
         self.gameState = gameState
-        self.isRed = isRed
-        self.getMazeDistance = getMazeDistance
         self.myIndex = index
+        self.isRed = isRed
+        self.getDistance = getDistance
+        self.wallList = wallList
         # 自己的位置 (左下角开始)
         self.myCurPosition = gameState.getAgentPosition(self.myIndex)
-        # 豆子位置 (左上角)
-        self.enemyFood = gameState.getRedFood().asList() if index & 1 else gameState.getBlueFood().asList()
-        # 中线位置
-        self.middleLineX = int((gameState.data.layout.width - 2) / 2) if isRed else int((gameState.data.layout.width - 2) / 2 + 1)
+        # 豆子位置 (左下角)
+        self.enemyFoodList = enemyFoodList
+        # 中线x位置
+        self.middleLineX = middleLineX
+        self.ourMiddleLine = ourMiddleLine
         # 分数
         self.prevScore = score
         self.curScore = gameState.getScore()
@@ -18,27 +30,52 @@ class State_2:
         self.prevFoodCarrying = foodCarrying
         self.curFoodCarrying = gameState.data.agentStates[self.myIndex].numCarrying
 
+    def isTerminal(self):
+
+        return False
+            # (self.prevFoodCarrying > 0) and (self.myCurPosition[0] == self.middleLineX)
+            # self.curScore != self.prevScore
+
     def getPossibleActions(self):
         actions = self.gameState.getLegalActions(self.myIndex)
-        # print(self.index, self.myCurPosition, actions) if not self.index & 1 else None
+        actions.remove('Stop')
+        # print(self.myIndex, self.myCurPosition, actions) if not self.myIndex & 1 else None
         return actions
 
     def takeAction(self, action):
-        s = State_2(self.isRed, self.myIndex, self.getMazeDistance, self.gameState.generateSuccessor(self.myIndex, action), self.curScore, self.curFoodCarrying)
-        return s
+        return State_2(self.gameState.generateSuccessor(self.myIndex, action),
+                       self.curScore,
+                       self.curFoodCarrying,
+                       self.myIndex,
+                       self.isRed,
+                       self.enemyFoodList,
+                       self.getDistance,
+                       self.middleLineX,
+                       self.ourMiddleLine,
+                       self.wallList)
+
     def getReward(self):
-        discountFactor = 0.000001
+        discountFactor = 0.001
         reward = 0
-        reward += discountFactor * (100 - min(map(lambda x: self.getMazeDistance(self.myCurPosition, x), self.getOurMiddleLine())))
+        distMid = 0
+        minDist = 100
+        for i in self.ourMiddleLine:
+            minDist = min(minDist,self.getDistance(self.myCurPosition,i))
+        distMid = discountFactor * (100 - minDist)*0.1
+        minDist = 1000
+        for i in self.enemyFoodList:
+            minDist = min(minDist,self.getDistance(self.myCurPosition,i))
+        distFood = discountFactor* (100 - minDist)
+        carry = self.curFoodCarrying*0.3
+        score = self.gameState.getScore()
+        reward = distFood + carry + score + distMid
 
-        # carryChange = self.curFoodCarrying - self.prevFoodCarrying
-        # if carryChange > 0:
-        #     reward += 10 * carryChange
-        # else:
-        reward += self.curFoodCarrying*10
-        reward += discountFactor * (100 - min(map(lambda x: self.getMazeDistance(self.myCurPosition, x), self.enemyFood)))
-        reward += (self.curScore - self.prevScore)*20
+        # for i,row in enumerate(self.mapMatrix):
+        #     print(row)
+        # print('-'*40)
 
+        # reward = score / 100
+        # print("index",self.myIndex,"Total:", reward, "Position:",self.myCurPosition," mid: ", distMid," food:", distFood, " carry:",carry," score:",score)
         return reward
 
     def getIndex(self, index):
@@ -49,22 +86,3 @@ class State_2:
 
     def returnedHome(self, x):
         return x <= self.middleLineX if self.isRed else x >= self.middleLineX
-
-    def isTerminal(self):
-        if self.curScore - self.prevScore > 0:
-            return True
-        return False
-
-    def getOurMiddleLine(self):
-        middleLine = []
-        mapWidth = self.gameState.data.layout.width
-        mapHeight = self.gameState.data.layout.height
-        if self.isRed:
-          x = int((mapWidth - 2) / 2)
-        else:
-          x = int((mapWidth - 2) / 2 + 1)
-        wallList = self.gameState.getWalls().asList()
-        for y in range(1, mapHeight):
-          if (x, y) not in wallList:
-            middleLine.append((x,y))
-        return middleLine
