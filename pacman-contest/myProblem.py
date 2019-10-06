@@ -399,9 +399,11 @@ class EatOneSafeFoodProblem:
             if not enemy is None:
               dis = self.agent.distancer.getDistance((nextx,nexty),enemy)
               closeDist = min(closeDist,dis)
-          print("test for deadEnd",(nextx,nexty),self.deadEnds)
+          # print("test for deadEnd",(nextx,nexty),self.deadEnds)
           if ((nexty,nextx) in self.deadEnds):
               numDE += 1
+          # closeDist 是更新后的enemyPosition, 更新位置需额外加1
+          # if closeDist-1 > numDE+1:
           if closeDist-1 > numDE:
             nextFood = state[2].copy()
             nextFood[nextx][nexty] = False
@@ -514,7 +516,7 @@ class EscapeProblem1:
 
   def EscapeHeuristic(self,state):
     middleLine = self.middleLine
-    print(state)
+    # print(state)
     curPos, enemy = state
     minDist = 9999
     for mid in middleLine:
@@ -706,28 +708,28 @@ def minDistance(pos, posList, walls, agent):
   return action
 
 #find shortest path, to any pos in posList
-# def minDistanceToFarthestFood(pos, posList, walls, agent):
-#   maxDist = 0
-#   x, y = pos
-#   foodPos = posList[0]
-#   for target in posList:
-#     dist = agent.distancer.getDistance((x, y), target)
-#     if dist > maxDist:
-#       maxDist = dist
-#       foodPos = target
-#
-#   minDist = 9999
-#   action = Directions.NORTH
-#   for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
-#     x, y = pos
-#     dx, dy = Actions.directionToVector(direction)
-#     nextx, nexty = int(x + dx), int(y + dy)
-#     if not walls[nextx][nexty]:
-#       dist = agent.distancer.getDistance((nextx, nexty), foodPos)
-#       if dist < minDist:
-#         minDist = dist
-#         action = direction
-#   return action
+def minDistanceToFarthestFood(pos, posList, walls, agent):
+  maxDist = 0
+  x, y = pos
+  foodPos = posList[0]
+  for target in posList:
+    dist = agent.distancer.getDistance((x, y), target)
+    if dist > maxDist:
+      maxDist = dist
+      foodPos = target
+
+  minDist = 9999
+  action = Directions.NORTH
+  for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
+    x, y = pos
+    dx, dy = Actions.directionToVector(direction)
+    nextx, nexty = int(x + dx), int(y + dy)
+    if not walls[nextx][nexty]:
+      dist = agent.distancer.getDistance((nextx, nexty), foodPos)
+      if dist < minDist:
+        minDist = dist
+        action = direction
+  return action
 
 def getFoodExceptDeadEnds(agent, gameState):
   food = agent.getFood(gameState)
@@ -745,14 +747,13 @@ def eatCloseFood(agent, gameState, index):
   action = minDistance(pos, foodList, walls, agent)
   return action
 
-# def eatFarthestFood(agent, gameState, index):
-#   food = agent.getFood(gameState)
-#   foodList = food.asList()
-#   pos = gameState.getAgentPosition(index)
-#   walls = gameState.getWalls()
-#   #walls = getActualWalls(gameState)
-#   action = minDistanceToFarthestFood(pos, foodList, walls, agent)
-#   return action
+def eatRandomFood(agent, gameState, index):
+  foodIndex = agent.randomFoodIndex
+  foodPos = agent.getFood(gameState).asList()[foodIndex]
+  pos = gameState.getAgentPosition(index)
+  walls = getActualWalls(gameState)
+  action = minDistance(pos, [foodPos], walls, agent)
+  return action
 
 def eatFoodOutsideDeadEnd(agent, gameState, index):
   foodList = getFoodExceptDeadEnds(agent, gameState)
@@ -782,6 +783,26 @@ def reachOwnMidList(agent, gameState, index):
   pos = gameState.getAgentPosition(index)
   walls = getActualWalls(gameState)
   action = minDistance(pos, middleList, walls, agent)
+  return action
+
+# used when escape & eatSafeFood return nothing
+def reachOwnMidWithEnemyInsight(agent, gameState, index):
+  ghostIndices = agent.getOpponents(gameState)
+  ghostList = []
+  for idx in ghostIndices:
+    enemyPos = gameState.getAgentPosition(idx)
+    if enemyPos != None:
+      ghostList.append(enemyPos)
+  middleList = agent.midLine
+  pos = gameState.getAgentPosition(index)
+  walls = getActualWalls(gameState)
+  for ghost in ghostList: # x y of deadEnd is reversed
+    print("ghost:",ghost)
+    walls[ghost[0]][ghost[1]] = True
+  action = minDistance(pos, middleList, walls, agent)
+
+  print("legal actions:", gameState.getLegalActions(agent.index))
+  print("actual action:", action)
   return action
 
 def reachEnemyMidList(agent, gameState, index):
