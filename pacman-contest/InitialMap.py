@@ -9,29 +9,68 @@ def searchDeadEnd(map):
     #
     # blueCapsule = {}
     # redCapsule = {}
+    deadEndDist = {}
     deadEnd = []
     for i in range(1,len(map)-1):
         for j in range(1,len(map[i])-1):
             if map[i][j] != 0:
                 if moveNum(map,i,j,deadEnd) == 1:
                     deadEnd = moveEnd(map,i,j,deadEnd)
+    deadEnd = list(set(deadEnd))
     # for i in range(1,len(map)-1):
     #     for j in range(1,len(map[i])-1):
     #         if map[i,j] == 3:
     #             blueCapsule[(i,j)] = capsuleMove(map,i,j,deadEnd,[])
     #         if map[i,j] == 5:
     #             redCapsule[(i,j)] = capsuleMove(map,i,j,deadEnd,[])
-    for i in range(0,len(map)):
-        for j in range(0,len(map[i])):
-            if map[i][j] == 0:
-                print("%",end='')
-            else:
-                if (i,j) in deadEnd:
-                    print("*",end = "")
-                else:
-                    print("#",end = "")
-        print()
-    return deadEnd
+    deadEndDist = getDepth(deadEnd,map)
+    deadEndDistInver = {}
+    for i in deadEndDist:
+        for j in deadEndDist[i]:
+            deadEndDistInver[j] = i
+    # print(deadEndDistInver)
+    # for i in range(0,len(map)):
+    #     for j in range(0,len(map[i])):
+    #         if map[i][j] == 0:
+    #             print("%",end='')
+    #         else:
+    #             if (i,j) in deadEnd:
+    #                 print(str(deadEndDistInver[(i,j)]),end = "")
+    #             else:
+    #                 print("#",end = "")
+    #     print()
+    return deadEndDistInver
+
+def getDepth(deadEnd,map):
+    deadEndDist = {}
+    deadEndDist[1] = []
+    deadEndRemove = copy.deepcopy(deadEnd)
+    addDist = []
+    moves = [(-1,0),(+1,0),(0,-1),(0,+1)]
+    for i in range(1,len(map)-1):
+        for j in range(1,len(map[i])-1):
+            if map[i][j] != 0 and (not (i,j) in deadEnd):
+                for move in moves:
+                    if (i+move[0],j+move[1]) in deadEnd:
+                        deadEndDist[1].append((i+move[0],j+move[1]))
+                        deadEndRemove.remove((i+move[0],j+move[1]))
+                        addDist.append((i+move[0],j+move[1]))
+
+    depth = 1
+    while set(addDist) != set(deadEnd):
+        deadEndDist[depth+1] = []
+        for i in deadEndDist[depth]:
+            for move in moves:
+                if ((i[0]+move[0],i[1]+move[1]) in deadEnd) and (not (i[0]+move[0],i[1]+move[1]) in addDist):
+                    deadEndDist[depth+1].append((i[0]+move[0],i[1]+move[1]))
+                    print((i[0]+move[0],i[1]+move[1]))
+                    deadEndRemove.remove((i[0]+move[0],i[1]+move[1]))
+                    addDist.append((i[0]+move[0],i[1]+move[1]))
+        depth +=1
+    return deadEndDist
+
+
+
 def capsuleMove(map,x,y,deadEnd,caList):
     if (x,y) in deadEnd:
         caList.append((x,y))
