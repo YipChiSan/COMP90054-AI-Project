@@ -11,6 +11,8 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
+import sys
+sys.path.append('teams/kdbnb/')
 import copy
 import InitialMap
 from captureAgents import CaptureAgent
@@ -116,6 +118,7 @@ class AttackAgent(CaptureAgent):
     self.sumOfFood = len(self.getFood(gameState).asList())
     # used for separate pacman
     self.randomFoodIndex = random.randint(0, self.sumOfFood-1)
+    # print(self.randomFoodIndex)
     self.randomSelectFood = True
 
   def getMiddleX(self, gameState):
@@ -195,28 +198,28 @@ class AttackAgent(CaptureAgent):
     if self.red:
       #TODO capsule logic:
       timer = None # None for not using capsule logic
-      if enemyScaredTimer[0] > 0 or enemyScaredTimer[1] > 0: # enemy is scared
-        print("enemyScaredTimer:", enemyScaredTimer)
-        print("minDistToOwnMid:", minDistToOwnMid)
+      if (enemyScaredTimer[0] > 0 or enemyScaredTimer[1] > 0) and curPos[0] > self.midX: # enemy is scared
+        # print("enemyScaredTimer:", enemyScaredTimer)
+        # print("minDistToOwnMid:", minDistToOwnMid)
         if enemyScaredTimer[0] > 0 and enemyPos[0] != None:
           if enemyScaredTimer[1] > 0 and enemyPos[1] != None:
             timer = min(enemyScaredTimer[0],enemyScaredTimer[1])
           elif enemyPos[1] == None:
             timer = enemyScaredTimer[0]
           if timer != None and timer <= minDistToOwnMid+1:
-            print("capsule action: reachOwnMidList")
+            # print("capsule action: reachOwnMidList")
             action = myProblem.reachOwnMidList(self, gameState, self.index)
           elif timer != None and timer > minDistToOwnMid+1:
-            print("capsule action: eatCloseFood")
+            # print("capsule action: eatCloseFood")
             action = myProblem.eatCloseFood(self, gameState, self.index)
         elif enemyPos[0] == None:
           if enemyScaredTimer[1] > 0 and enemyPos[1] != None:
             timer = enemyScaredTimer[1]
           if timer != None and timer <= minDistToOwnMid+1:
-            print("capsule action: reachOwnMidList")
+            # print("capsule action: reachOwnMidList")
             action = myProblem.reachOwnMidList(self, gameState, self.index)
           elif timer != None and timer > minDistToOwnMid+1:
-            print("capsule action: eatCloseFood")
+            # print("capsule action: eatCloseFood")
             action = myProblem.eatCloseFood(self, gameState, self.index)
         if timer != None:
           return action
@@ -237,16 +240,19 @@ class AttackAgent(CaptureAgent):
             if curPos[0] >= self.enemyMidX or teammatePos[0] >= self.enemyMidX:
               self.randomSelectFood = False
             if self.randomSelectFood:
+              # print("entering randomSelectFood")
               action = myProblem.eatRandomFood(self, gameState, self.index)
             else:
+              # print("entering eatCloseFood")
               action = myProblem.eatCloseFood(self, gameState, self.index)
           else:
+            # print("entering eatCloseFood")
             action = myProblem.eatCloseFood(self, gameState, self.index)
       else:
         # judge enemy is ghost or pacman
         for enemy in enemyPos:
-          if not (enemy is None) and enemy[0] <= self.midX:  # any one of enemies is ghost
-            print("chase closest enemy pacman")
+          if not (enemy is None) and enemy[0] <= self.midX:  # any one of enemies is PACMAN
+            # print("chase closest enemy pacman")
             action = myProblem.eatClosestEnemyPacman(self, gameState, self.index)
             return action
         if curPos[0] < self.midX:
@@ -262,10 +268,10 @@ class AttackAgent(CaptureAgent):
               escapeProblem = myProblem.EscapeProblem1(gameState, self)
               actions = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)
               if actions == None:
-                print("reachOwnMidWithEnemyInsight1")
+                # print("reachOwnMidWithEnemyInsight1")
                 action = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
               else:
-                print("EscapeProblem1:", actions)
+                # print("EscapeProblem1:", actions)
                 action = actions[0]
             #   print("stop?")
             #   action = "Stop"
@@ -317,10 +323,10 @@ class AttackAgent(CaptureAgent):
 
     while not frontier.isEmpty():
       elapsed = (time.clock() - start)
-      print("Time used:", elapsed)
+      # print("Time used:", elapsed)
       # todo : if elapsed >= 0.8 return None
       if elapsed >= 0.8:
-        print("time exceed")
+        # print("time exceed")
         return "TIMEEXCEED" # for eatOneSafeFood time exceed
 
       current_node = frontier.pop()
@@ -343,40 +349,6 @@ class AttackAgent(CaptureAgent):
             priority = cost_g + heuristic(successor[0])
             path = current_node[1] + [successor[1]]
             frontier.push((successor[0], path, cost_g), priority)
-
-    # if no result, calculate four adjacent positions
-    # return self.forcedReturn(problem, start_node[0])
-
-  # def forcedReturn(self, problem, state):
-  #   print("enter forcedReturn")
-  #   #fixme: currently used for escape heuristic
-  #   maxDistToEnemy = 0
-  #   prevMinDistToMid = 999999
-  #   action = 'Stop'
-  #   for successor in problem.getSuccessors(state):
-  #     distList = problem.getInSightEnemyDistances(successor[0][0])
-  #     sumDistToEnemy = 0
-  #     for dist in distList:
-  #       sumDistToEnemy += dist
-  #
-  #     if sumDistToEnemy > maxDistToEnemy:
-  #       maxDistToEnemy = sumDistToEnemy
-  #       action = successor[1]
-  #       prevMinDistToMid = 999999
-  #       for midPos in self.midLine:
-  #         prevMinDistToMid = min(prevMinDistToMid, self.distancer.getDistance(successor[0][0], midPos))
-  #     elif sumDistToEnemy == maxDistToEnemy:
-  #       minDistToMid = 999999
-  #       for midPos in self.midLine:
-  #         minDistToMid = min(minDistToMid, self.distancer.getDistance(successor[0][0], midPos))
-  #       if minDistToMid < prevMinDistToMid:
-  #         prevMinDistToMid = minDistToMid
-  #         action = successor[1]
-  #   return [action]
-
-
-
-
 
 
 
