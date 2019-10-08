@@ -13,6 +13,7 @@
 
 import sys
 sys.path.append('teams/kdbnb/')
+
 import copy
 import InitialMap
 from captureAgents import CaptureAgent
