@@ -63,7 +63,7 @@ def getDepth(deadEnd,map):
             for move in moves:
                 if ((i[0]+move[0],i[1]+move[1]) in deadEnd) and (not (i[0]+move[0],i[1]+move[1]) in addDist):
                     deadEndDist[depth+1].append((i[0]+move[0],i[1]+move[1]))
-                    print((i[0]+move[0],i[1]+move[1]))
+                    # print((i[0]+move[0],i[1]+move[1]))
                     deadEndRemove.remove((i[0]+move[0],i[1]+move[1]))
                     addDist.append((i[0]+move[0],i[1]+move[1]))
         depth +=1
