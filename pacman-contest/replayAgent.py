@@ -21,8 +21,10 @@ class RecordAgent(CaptureAgent):
         currentState = self.State_1(self, gameState).getCurrentState(self.initState)
         row = self.previousState[self.index] + currentState
         self.previousState[self.index] = currentState
+        print(gameState)
+        print('----------------------------------')
 
         # STEP 4: Append each row to a list (?)
-        print(row) if len(row) > len(currentState) else None
+        # print(row) if len(row) > len(currentState) else None
         ##################################################################
         return self.action.pop(0)[1]

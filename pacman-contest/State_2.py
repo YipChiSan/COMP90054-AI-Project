@@ -9,13 +9,13 @@ class State_2:
                  enemyFoodList,
                  getDistance,
                  middleLineX,
-                 ourMiddleLine,
-                 wallList):
+                 ourMiddleLine):
         self.gameState = gameState
         self.myIndex = index
         self.isRed = isRed
         self.getDistance = getDistance
-        self.wallList = wallList
+        self.firstEnemyIndex = self.getIndex(1)
+        self.secondEnemyIndex = self.getIndex(3)
         # 自己的位置 (左下角开始)
         self.myCurPosition = gameState.getAgentPosition(self.myIndex)
         # 豆子位置 (左下角)
@@ -31,19 +31,17 @@ class State_2:
         self.curFoodCarrying = gameState.data.agentStates[self.myIndex].numCarrying
 
     def isTerminal(self):
-
         return False
-            # (self.prevFoodCarrying > 0) and (self.myCurPosition[0] == self.middleLineX)
-            # self.curScore != self.prevScore
 
     def getPossibleActions(self):
         actions = self.gameState.getLegalActions(self.myIndex)
         actions.remove('Stop')
-        # print(self.myIndex, self.myCurPosition, actions) if not self.myIndex & 1 else None
         return actions
 
     def takeAction(self, action):
-        return State_2(self.gameState.generateSuccessor(self.myIndex, action),
+        gameState = self.gameState.generateSuccessor(self.myIndex, action)
+        gameStateAfterEnemyMove = self.getGameStateAfterEnemyWalkTowardsMe(gameState)
+        return State_2(gameStateAfterEnemyMove,
                        self.curScore,
                        self.curFoodCarrying,
                        self.myIndex,
@@ -51,8 +49,60 @@ class State_2:
                        self.enemyFoodList,
                        self.getDistance,
                        self.middleLineX,
-                       self.ourMiddleLine,
-                       self.wallList)
+                       self.ourMiddleLine)
+
+    def getGameStateAfterEnemyWalkTowardsMe(self, gameState):
+        return gameState
+        firstEnemyPos = self.gameState.getAgentPosition(self.firstEnemyIndex)
+        secondEnemyPos = self.gameState.getAgentPosition(self.secondEnemyIndex)
+        if not firstEnemyPos and not secondEnemyPos:
+            return gameState
+        else:
+            newState = gameState
+            if firstEnemyPos:
+                enemyNewPos = []
+                firstActions = newState.getLegalActions(self.firstEnemyIndex)
+                for action in firstActions:
+                    firstEnemyNewPos = self._getPositionFromAction(firstEnemyPos, action)
+                    print(firstEnemyNewPos, action)
+                    dis = self.getDistance(self.myCurPosition, firstEnemyNewPos)
+                    enemyNewPos.append((firstEnemyNewPos, action, dis))
+                minD = 999999
+                act = None
+                for i, item in enumerate(enemyNewPos):
+                    if item[2] < minD:
+                        minD = item[2]
+                        act = item[1]
+                newState = newState.generateSuccessor(self.firstEnemyIndex, act)
+            if secondEnemyPos:
+                enemyNewPos = []
+                secondActions = newState.getLegalActions(self.secondEnemyIndex)
+                for action in secondActions:
+                    secondEnemyNewPos = self._getPositionFromAction(secondEnemyPos, action)
+                    dis = self.getDistance(self.myCurPosition, secondEnemyNewPos)
+                    enemyNewPos.append((secondEnemyNewPos, action, dis))
+                minD = 999999
+                act = None
+                for i, item in enumerate(enemyNewPos):
+                    if item[2] < minD:
+                        minD = item[2]
+                        act = item[1]
+                newState = newState.generateSuccessor(self.secondEnemyIndex, act)
+        return newState
+
+    def _getPositionFromAction(self, pos, action):
+        x,y = pos
+        if action == 'North':
+            newPos = (x,y+1)
+        elif action == 'South':
+            newPos = (x,y-1)
+        elif action == 'East':
+            newPos = (x+1,y)
+        elif action == 'West':
+            newPos = (x-1,y)
+        else:
+            newPos = pos
+        return newPos
 
     def getReward(self):
         discountFactor = 0.001
@@ -69,10 +119,6 @@ class State_2:
         carry = self.curFoodCarrying*0.3
         score = self.gameState.getScore()
         reward = distFood + carry + score + distMid
-
-        # for i,row in enumerate(self.mapMatrix):
-        #     print(row)
-        # print('-'*40)
 
         # reward = score / 100
         # print("index",self.myIndex,"Total:", reward, "Position:",self.myCurPosition," mid: ", distMid," food:", distFood, " carry:",carry," score:",score)

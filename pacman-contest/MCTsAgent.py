@@ -15,7 +15,6 @@ class MCTsAgent(CaptureAgent):
 
     def chooseAction(self, gameState):
         # t = State_2(self, gameState, self.getScore(gameState), gameState.data.agentStates[self.index].numCarrying)
-
         t = State_2(gameState,
                     self.getScore(gameState),
                     gameState.data.agentStates[self.index].numCarrying,
@@ -24,8 +23,7 @@ class MCTsAgent(CaptureAgent):
                     self.getFood(gameState).asList(),
                     self.distancer.getDistance,
                     int((gameState.data.layout.width - 2) / 2 ) if self.red else int((gameState.data.layout.width - 2) / 2 + 1),
-                    self.getOurMiddleLine(gameState, self.red),
-                    self.wallList
+                    self.getOurMiddleLine(gameState, self.red)
                     )
 
         return self.test.search(t)
