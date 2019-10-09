@@ -30,8 +30,8 @@ class State_2:
         self.prevFoodCarrying = foodCarrying
         self.curFoodCarrying = gameState.data.agentStates[self.myIndex].numCarrying
 
-    def isTerminal(self):
-        return False
+    # def isTerminal(self):
+    #     return False
 
     def getPossibleActions(self):
         actions = self.gameState.getLegalActions(self.myIndex)
@@ -120,6 +120,10 @@ class State_2:
         score = self.gameState.getScore()
         reward = distFood + carry + score + distMid
 
+        # for i,row in enumerate(self.mapMatrix):
+        #     print(row)
+        # print('-'*40)
+
         # reward = score / 100
         # print("index",self.myIndex,"Total:", reward, "Position:",self.myCurPosition," mid: ", distMid," food:", distFood, " carry:",carry," score:",score)
         return reward
@@ -132,3 +136,22 @@ class State_2:
 
     def returnedHome(self, x):
         return x <= self.middleLineX if self.isRed else x >= self.middleLineX
+
+    def isTerminal(self):
+        if self.curScore - self.prevScore > 0:
+            return True
+        return False
+
+    def getOurMiddleLine(self):
+        middleLine = []
+        mapWidth = self.gameState.data.layout.width
+        mapHeight = self.gameState.data.layout.height
+        if self.isRed:
+          x = int((mapWidth - 2) / 2)
+        else:
+          x = int((mapWidth - 2) / 2 + 1)
+        wallList = self.gameState.getWalls().asList()
+        for y in range(1, mapHeight):
+          if (x, y) not in wallList:
+            middleLine.append((x,y))
+        return middleLine

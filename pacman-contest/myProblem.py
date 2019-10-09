@@ -625,7 +625,8 @@ class EatOneEscapeProblem:
 
   def eatOneEscapeHeuristic(self,state):
     middleLine = self.middleLine
-    print(state)
+    if debug:
+      print(state)
     curPos, enemy, foods,step = state
     minDist = 9999
     foodList = copy.deepcopy(foods.asList())
@@ -644,7 +645,8 @@ class EatOneEscapeProblem:
     newEnemyList = []
     minDist = 9999
     for enemy in enemyList:
-      print("enemy",enemy)
+      if debug:
+        print("enemy",enemy)
       if not self.walls[enemy[0]][enemy[1]]:
         dis = self.agent.distancer.getDistance(pos,enemy)
         if dis == minDist:
@@ -797,12 +799,13 @@ def reachOwnMidWithEnemyInsight(agent, gameState, index):
   pos = gameState.getAgentPosition(index)
   walls = getActualWalls(gameState)
   for ghost in ghostList: # x y of deadEnd is reversed
-    print("ghost:",ghost)
+    if debug:
+      print("ghost:",ghost)
     walls[ghost[0]][ghost[1]] = True
   action = minDistance(pos, middleList, walls, agent)
-
-  print("legal actions:", gameState.getLegalActions(agent.index))
-  print("actual action:", action)
+  if debug:
+    print("legal actions:", gameState.getLegalActions(agent.index))
+    print("actual action:", action)
   return action
 
 def reachEnemyMidList(agent, gameState, index):
