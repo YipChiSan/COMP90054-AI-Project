@@ -24,14 +24,17 @@ from layout import Grid
 import myProblem
 from State_1 import *
 import random
-
+import getEnemyPosition
 
 #################
 # Team creation #
 #################
 
+enemyPosition = getEnemyPosition.enemyPosition()
+
 def createTeam(firstIndex, secondIndex, isRed,
                first = 'AttackAgent', second = 'AttackAgent'):
+
   """
   This function should return a list of two agents that will form the
   team, initialized using firstIndex and secondIndex as their agent
@@ -122,6 +125,20 @@ class AttackAgent(CaptureAgent):
     self.randomFoodIndex = random.randint(0, self.sumOfFood-1)
     # print(self.randomFoodIndex)
     self.randomSelectFood = True
+    self.immuneTimer = 0
+    self.allienIndex = (self.index + 2) % 4
+    if self.red:
+      self.enemyIndex = [1,3]
+    else:
+      self.enemyIndex = [0,2]
+    enemyPosition.initial(gameState,self.red,self.mapMatrix)
+    # for i in self.deadEnd:
+    #   # x = i[1]
+    #   # y = len(self.mapMatrix) - i[0] -1
+    #   if i[0] <= self.midX:
+    #     self.debugDraw(i,[self.deadEnd[i]/100+0.3,0,0])
+    #   else:
+    #     self.debugDraw(i,[0,self.deadEnd[i]/100+0.3,0])
 
   def getMiddleX(self, gameState):
     mapWidth = gameState.data.layout.width
@@ -165,6 +182,97 @@ class AttackAgent(CaptureAgent):
       new_index = new_index - 4
     return new_index
 
+  def capsuleEatenLastMove(self, gameState):
+    prevGameState = self.getPreviousObservation()
+    if prevGameState != None:
+      prevCapsules = self.getCapsules(prevGameState)
+      curCapsules = self.getCapsules(gameState)
+      for capsule in prevCapsules:
+        if capsule not in curCapsules:
+          return True
+    return False
+
+  def eatEnemy(self,gameState):
+      eatEnemy = {}
+      preGameState = self.getPreviousObservation()
+      for index in self.enemyIndex:
+        eatEnemy[index] = False
+        if gameState.data.timeleft <1190:
+          enemyCur = gameState.getAgentPosition(index)
+          enemyPre = preGameState.getAgentPosition(index)
+          posPre = preGameState.getAgentPosition(self.index)
+          allienPre = preGameState.getAgentPosition(self.allienIndex)
+          if enemyCur is None and (not enemyPre is None) and (gameState.getAgentPosition(self.index) != gameState.getInitialAgentPosition(self.index)):
+            distance = self.distancer.getDistance(posPre,enemyPre)
+            distance2 = self.distancer.getDistance(allienPre,enemyPre)
+            if (distance < 2) or (distance2 < 2):
+              eatEnemy[index] = True
+            else:
+              eatEnemy[index] = False
+          else:
+            if (not enemyPre is None) and (enemyCur is None):
+              distance = self.distancer.getDistance(posPre,enemyPre)
+              if distance > 2:
+                eatEnemy[index] = True
+              else:
+                eatEnemy[index] = False
+            else:
+              eatEnemy[index] = False
+      return eatEnemy
+
+
+  def getEnemyTrueP(self,gameState):
+    enemyPosition = {}
+    if self.red:
+      enemyPosition[1] = gameState.getAgentPosition(1)
+      enemyPosition[3] = gameState.getAgentPosition(3)
+    else:
+      enemyPosition[0] = gameState.getAgentPosition(0)
+      enemyPosition[2] = gameState.getAgentPosition(2)
+    return enemyPosition
+
+  def foodBeenEaten(self,gameState):
+      if gameState.data.timeleft<1190:
+        curFoods = self.getFoodYouAreDefending(gameState).asList()
+        preFoods = self.getFoodYouAreDefending(self.getPreviousObservation()).asList()
+      else:
+        return set()
+      return set(preFoods) - set(curFoods)
+
+  def capsuleBeenEaten(self,gameState):
+      if gameState.data.timeleft<1190:
+        curCap = self.getCapsulesYouAreDefending(gameState)
+        preCap = self.getCapsulesYouAreDefending(self.getPreviousObservation())
+      else:
+        return set()
+      return set(preCap) - set(curCap)
+
+  def getEnemyPosition(self,gameState):
+    curPos = gameState.getAgentPosition(self.index)
+    noiseDistance = gameState.agentDistances
+    if gameState.data.timeleft <1200:
+      eatEnemy = self.eatEnemy(gameState)
+      for i in eatEnemy:
+        if eatEnemy[i]:
+          enemyPosition.updateWithDeath(i)
+      enemyPosition.updateWithNoise(noiseDistance,self.index,curPos)
+      enemyTruePosition = self.getEnemyTrueP(gameState)
+      for i in enemyTruePosition:
+        if not enemyTruePosition[i] is None:
+          enemyPosition.updateWithVision(i,enemyTruePosition[i])
+      if len(self.foodBeenEaten(gameState)) != 0:
+        enemyPosition.updateWithEatenFood(list(self.foodBeenEaten(gameState))[0])
+      if len(self.capsuleBeenEaten(gameState)) != 0:
+        enemyPosition.updateWithEatenFood(list(self.capsuleBeenEaten(gameState))[0])
+      a = enemyPosition.enemyPosition
+      self.debugClear()
+      for i in a[1]:
+        self.debugDraw(i,[0,.3,.9])
+      # for i in enemyPosition.validPosition:
+      #   self.debugDraw(i,[0,0,1])
+      for i in a[3]:
+        self.debugDraw(i,[.1,.75,.7])
+
   def chooseAction(self, gameState):
     curPos = gameState.getAgentPosition(self.index)
     teammateIndex = self.getIndex(2)
@@ -173,6 +281,10 @@ class AttackAgent(CaptureAgent):
     enemyPos = []
     for idx in enemyIndices:
       enemyPos.append(gameState.getAgentPosition(idx))
+    enemyPosition = self.getEnemyPosition(gameState)
+    # print(self.midLine)
+    # print("=============")
+
     # initialize attack problem for new gameState
     # attackProblem = myProblem.EatOneProblem(gameState, self)
     # """judge if the pac man died in last turn to reset carriedFood value"""

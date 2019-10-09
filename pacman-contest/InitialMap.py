@@ -27,7 +27,9 @@ def searchDeadEnd(map):
     deadEndDistInver = {}
     for i in deadEndDist:
         for j in deadEndDist[i]:
-            deadEndDistInver[j] = i
+            x = j[1]
+            y = len(map) - 1 - j[0]
+            deadEndDistInver[(x,y)] = i
     # print(deadEndDistInver)
     # for i in range(0,len(map)):
     #     for j in range(0,len(map[i])):
@@ -63,7 +65,7 @@ def getDepth(deadEnd,map):
             for move in moves:
                 if ((i[0]+move[0],i[1]+move[1]) in deadEnd) and (not (i[0]+move[0],i[1]+move[1]) in addDist):
                     deadEndDist[depth+1].append((i[0]+move[0],i[1]+move[1]))
-                    # print((i[0]+move[0],i[1]+move[1]))
+                    print((i[0]+move[0],i[1]+move[1]))
                     deadEndRemove.remove((i[0]+move[0],i[1]+move[1]))
                     addDist.append((i[0]+move[0],i[1]+move[1]))
         depth +=1
@@ -85,12 +87,15 @@ def moveNum(map,x,y,deadEnd):
     numDead = ((x-1,y) in deadEnd) + ((x+1,y) in deadEnd) + ((x,y-1) in deadEnd)+((x,y+1) in deadEnd)
     return (map[x-1][y] != 0) + (map[x+1][y] != 0 ) + (map[x][y-1] !=0) + (map[x][y+1] !=0) - numDead
 
+def checkMid(pos1,pos2,midx):
+    return not ((pos1 - midx) * (pos2 - midx) < 0)
+
 def moveEnd(map,x,y,deadEnd):
     deadEnd.append((x,y))
     moves = [(-1,0),(+1,0),(0,-1),(0,+1)]
     for i in moves:
         if map[x+i[0]][y+i[1]] != 0:
-            if moveNum(map,x+i[0],y+i[1],deadEnd) == 1:
+            if (moveNum(map,x+i[0],y+i[1],deadEnd) == 1) and checkMid(y + i[1],y,(len(map[0])+1)/2):
                 # deadEnd.append((x+i[0],y+i[1]))
                 deadEnd = moveEnd(map,x+i[0],y+i[1],deadEnd)
     return deadEnd
