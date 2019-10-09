@@ -111,7 +111,6 @@ def getMapMatrix(gameState):
 class AttackAgent(CaptureAgent):
   def registerInitialState(self, gameState):
     CaptureAgent.registerInitialState(self, gameState) # must be put ahead to set value of self.red
-    # TODO: 添加一个dict，包含两个agent index各自目标food的position，在算heuristic的时候从foodList中剔除dict中的值再进行计算
     self.walls = gameState.getWalls()
     self.midX = self.getMiddleX(gameState)
     self.enemyMidX = self.getEnemyMiddleX(gameState)
@@ -125,7 +124,6 @@ class AttackAgent(CaptureAgent):
     self.randomFoodIndex = random.randint(0, self.sumOfFood-1)
     # print(self.randomFoodIndex)
     self.randomSelectFood = True
-    self.immuneTimer = 0
     self.allienIndex = (self.index + 2) % 4
     if self.red:
       self.enemyIndex = [1,3]
@@ -219,7 +217,6 @@ class AttackAgent(CaptureAgent):
             else:
               eatEnemy[index] = False
       return eatEnemy
-
 
   def getEnemyTrueP(self,gameState):
     enemyPosition = {}
