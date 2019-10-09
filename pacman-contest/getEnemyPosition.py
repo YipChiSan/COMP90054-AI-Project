@@ -95,9 +95,10 @@ class enemyPosition:
             if self.checkNoiseDistance(noiseDistance[notMoved],pos,position):
                 newEnemyPosition.append(pos)
         self.enemyPosition[notMoved] = list(set(newEnemyPosition))
-        print("index:",index,"position",position,"noise distance",noiseDistance,"enemyPosition:",self.enemyPosition,"before:",before1,before2)
+        # print("index:",index,"position",position,"noise distance",noiseDistance,"enemyPosition:",self.enemyPosition,"before:",before1,before2)
         if len(self.enemyPosition[notMoved]) ==0 or len(self.enemyPosition[hasMoved]) ==0:
-            print("????")
+            pass
+            # print("????")
         for i in self.death:
             if self.death[i] >0:
                 self.death[i] += -1

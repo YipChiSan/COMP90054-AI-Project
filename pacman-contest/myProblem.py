@@ -797,12 +797,12 @@ def reachOwnMidWithEnemyInsight(agent, gameState, index):
   pos = gameState.getAgentPosition(index)
   walls = getActualWalls(gameState)
   for ghost in ghostList: # x y of deadEnd is reversed
-    print("ghost:",ghost)
+    # print("ghost:",ghost)
     walls[ghost[0]][ghost[1]] = True
   action = minDistance(pos, middleList, walls, agent)
 
-  print("legal actions:", gameState.getLegalActions(agent.index))
-  print("actual action:", action)
+  # print("legal actions:", gameState.getLegalActions(agent.index))
+  # print("actual action:", action)
   return action
 
 def reachEnemyMidList(agent, gameState, index):
