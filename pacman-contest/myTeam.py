@@ -12,7 +12,7 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 import sys
-sys.path.append('teams/kdbnb/')
+sys.path.append('teams/kdbnb/pacman-contest/')
 
 import copy
 import InitialMap
