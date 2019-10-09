@@ -83,20 +83,20 @@ class State_1:
         secondEnemyIsScaredGhost = secondEnemyIsGhost and (secondEnemyAgentState.scaredTimer != 0)
 
         # 自己离我方出生地距离
-        myDistanceFromHome = self.Agent.distancer.getDistance(myInitialAgentPosition, myCurPosition)
+        myDistanceFromHome = self.Agent.getMazeDistance(myInitialAgentPosition, myCurPosition)
         # 队友离我方出生地距离
-        teammateDistanceFromHome = self.Agent.distancer.getDistance(teammateInitialAgentPosition, teammateCurPosition)
+        teammateDistanceFromHome = self.Agent.getMazeDistance(teammateInitialAgentPosition, teammateCurPosition)
         # 第一个敌人离我方出生地距离
-        firstEnemyDistanceFromHome = self.Agent.distancer.getDistance(firstEnemyInitialAgentPosition, firstEnemyCurPosition) if firstEnemyCurPosition else -1
+        firstEnemyDistanceFromHome = self.Agent.getMazeDistance(firstEnemyInitialAgentPosition, firstEnemyCurPosition) if firstEnemyCurPosition else -1
         # 第二个敌人离我方出生地距离
-        secondEnemyDistanceFromHome = self.Agent.distancer.getDistance(secondEnemyInitialAgentPosition, secondEnemyCurPosition) if secondEnemyCurPosition else -1
+        secondEnemyDistanceFromHome = self.Agent.getMazeDistance(secondEnemyInitialAgentPosition, secondEnemyCurPosition) if secondEnemyCurPosition else -1
 
         # 自己离第一个敌人的真实距离
-        distanceBetweenMeAndFirstEnemy = self.Agent.distancer.getDistance(myCurPosition, firstEnemyCurPosition) if firstEnemyCurPosition else -1
+        distanceBetweenMeAndFirstEnemy = self.Agent.getMazeDistance(myCurPosition, firstEnemyCurPosition) if firstEnemyCurPosition else -1
         # 自己离第二个敌人的真实距离
-        distanceBetweenMeAndSecondEnemy = self.Agent.distancer.getDistance(myCurPosition, secondEnemyCurPosition) if secondEnemyCurPosition else -1
+        distanceBetweenMeAndSecondEnemy = self.Agent.getMazeDistance(myCurPosition, secondEnemyCurPosition) if secondEnemyCurPosition else -1
         # 自己离队友的真实距离
-        distanceBetweenMeAndTeammate = self.Agent.distancer.getDistance(myCurPosition, teammateCurPosition)
+        distanceBetweenMeAndTeammate = self.Agent.getMazeDistance(myCurPosition, teammateCurPosition)
 
         # 自己与第一个敌人的noisy distance
         noisyDistanceBetweenMeAndFirstEnemy = self.gameState.agentDistances[firstEnemyIndex]
@@ -104,16 +104,16 @@ class State_1:
         noisyDistanceBetweenMeAndSecondEnemy = self.gameState.agentDistances[secondEnemyIndex]
 
         # 自己距离我方中线的最近点距离
-        distanceToOurMiddleLine = min(map(lambda x: self.Agent.distancer.getDistance(myCurPosition, x), initState['ourMiddleLine']))
+        distanceToOurMiddleLine = min(map(lambda x: self.Agent.getMazeDistance(myCurPosition, x), initState['ourMiddleLine']))
         # 自己距离敌方中线的最近点距离
-        distanceToEnemyMiddleLine = min(map(lambda x: self.Agent.distancer.getDistance(myCurPosition, x), initState['enemyMiddleLine']))
+        distanceToEnemyMiddleLine = min(map(lambda x: self.Agent.getMazeDistance(myCurPosition, x), initState['enemyMiddleLine']))
 
         # 自己距离敌方最近capsule的距离
-        distanceToEnemyCapsule = min(map(lambda x: self.Agent.distancer.getDistance(myCurPosition, x), enemyCapsules)) if enemyCapsules else 999999
+        distanceToEnemyCapsule = min(map(lambda x: self.Agent.getMazeDistance(myCurPosition, x), enemyCapsules)) if enemyCapsules else 100
         # 第一个敌人距离我方capsule的最近距离
-        distanceFromFirstEnemyToOurCapsule = min(map(lambda x: self.Agent.distancer.getDistance(firstEnemyCurPosition, x), ourCapsules)) if firstEnemyCurPosition and ourCapsules else 99999
+        distanceFromFirstEnemyToOurCapsule = min(map(lambda x: self.Agent.getMazeDistance(firstEnemyCurPosition, x), ourCapsules)) if firstEnemyCurPosition and ourCapsules else 100
         # 第二个敌人距离我方capsule的最近距离
-        distanceFromSecondEnemyToOurCapsule = min(map(lambda x: self.Agent.distancer.getDistance(secondEnemyCurPosition, x), ourCapsules)) if secondEnemyCurPosition and ourCapsules else 99999
+        distanceFromSecondEnemyToOurCapsule = min(map(lambda x: self.Agent.getMazeDistance(secondEnemyCurPosition, x), ourCapsules)) if secondEnemyCurPosition and ourCapsules else 100
 
         # 我方剩余豆子个数
         ourRestFoodCount = ourFood.count()
@@ -132,11 +132,11 @@ class State_1:
         # 自己无敌时间
         myInvincibleTimer = min(self.gameState.data.agentStates[firstEnemyIndex].scaredTimer, self.gameState.data.agentStates[secondEnemyIndex].scaredTimer)
 
-        __enemyNearestFoodAndDistance = self.getEnemyNearestFood(self.Agent.distancer.getDistance, ourFood, firstEnemyCurPosition, secondEnemyCurPosition)
+        __enemyNearestFoodAndDistance = self.getEnemyNearestFood(self.Agent.getMazeDistance, ourFood, firstEnemyCurPosition, secondEnemyCurPosition)
         # 敌人到我方豆子最近到豆子(如果可见到话), 坐标从左上角开始
         distanceFromEnemyToOurFood = __enemyNearestFoodAndDistance[0]
         # 我方到离敌人最近豆子到距离
-        distanceToEnemyNearestFood = min(self.Agent.distancer.getDistance(myCurPosition, __enemyNearestFoodAndDistance[1]), self.Agent.distancer.getDistance(teammateCurPosition, __enemyNearestFoodAndDistance[1])) if __enemyNearestFoodAndDistance[1] else 999999
+        distanceToEnemyNearestFood = min(self.Agent.getMazeDistance(myCurPosition, __enemyNearestFoodAndDistance[1]), self.Agent.getMazeDistance(teammateCurPosition, __enemyNearestFoodAndDistance[1])) if __enemyNearestFoodAndDistance[1] else 100
 
         currentState = [
             score,
@@ -193,11 +193,11 @@ class State_1:
         return new_index
 
     def getEnemyNearestFood(self, getMazeDistance, ourFood, firstEnemyCurPosition, secondEnemyCurPosition):
-        minDistance = 999999
+        minDistance = 100
         minFood = None
         for i, food in enumerate(ourFood.asList()):
-            dis1 = getMazeDistance(firstEnemyCurPosition, food) if firstEnemyCurPosition else 999999
-            dis2 = getMazeDistance(secondEnemyCurPosition, food) if secondEnemyCurPosition else 999999
+            dis1 = getMazeDistance(firstEnemyCurPosition, food) if firstEnemyCurPosition else 100
+            dis2 = getMazeDistance(secondEnemyCurPosition, food) if secondEnemyCurPosition else 100
             dis = min(dis1, dis2)
             if dis < minDistance:
                 minDistance = dis

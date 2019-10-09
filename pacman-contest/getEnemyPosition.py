@@ -3,7 +3,7 @@
         #  'getInitialAgentPosition', 'getLegalActions', 'getNumAgents', 'getRedCapsules', 'getRedFood', 'getRedTeamIndices',
         #  'getScore', 'getWalls', 'hasFood', 'hasWall', 'initialize', 'isOnRedTeam', 'isOver', 'isRed', 'makeObservation',
         #  'redTeam', 'teams']
-
+import myTeam
 class enemyPosition:
     def __init__(self):
         self.firstEnemy = []
@@ -95,10 +95,10 @@ class enemyPosition:
             if self.checkNoiseDistance(noiseDistance[notMoved],pos,position):
                 newEnemyPosition.append(pos)
         self.enemyPosition[notMoved] = list(set(newEnemyPosition))
-        # print("index:",index,"position",position,"noise distance",noiseDistance,"enemyPosition:",self.enemyPosition,"before:",before1,before2)
+        if myTeam.debug:
+            print("index:",index,"position",position,"noise distance",noiseDistance,"enemyPosition:",self.enemyPosition,"before:",before1,before2)
         if len(self.enemyPosition[notMoved]) ==0 or len(self.enemyPosition[hasMoved]) ==0:
-            pass
-            # print("????")
+            print("????")
         for i in self.death:
             if self.death[i] >0:
                 self.death[i] += -1
