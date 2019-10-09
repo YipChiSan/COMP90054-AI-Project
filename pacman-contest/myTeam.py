@@ -29,7 +29,7 @@ import getEnemyPosition
 #################
 # Team creation #
 #################
-
+debug = False
 enemyPosition = getEnemyPosition.enemyPosition()
 
 def createTeam(firstIndex, secondIndex, isRed,
@@ -265,13 +265,14 @@ class AttackAgent(CaptureAgent):
       if len(self.capsuleBeenEaten(gameState)) != 0:
         enemyPosition.updateWithEatenFood(list(self.capsuleBeenEaten(gameState))[0])
       a = enemyPosition.enemyPosition
-      self.debugClear()
-      for i in a[1]:
-        self.debugDraw(i,[0,.3,.9])
-      # for i in enemyPosition.validPosition:
-      #   self.debugDraw(i,[0,0,1])
-      for i in a[3]:
-        self.debugDraw(i,[.1,.75,.7])
+      if debug:
+          self.debugClear()
+          for i in a[1]:
+            self.debugDraw(i,[0,.3,.9])
+          # for i in enemyPosition.validPosition:
+          #   self.debugDraw(i,[0,0,1])
+          for i in a[3]:
+            self.debugDraw(i,[.1,.75,.7])
 
   def chooseAction(self, gameState):
     curPos = gameState.getAgentPosition(self.index)
