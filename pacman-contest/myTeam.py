@@ -312,7 +312,9 @@ class AttackAgent(CaptureAgent):
       if (enemyScaredTimer[0] > 0 or enemyScaredTimer[1] > 0) and curPos[0] > self.midX: # enemy is scared
         # print("enemyScaredTimer:", enemyScaredTimer)
         # print("minDistToOwnMid:", minDistToOwnMid)
-        #todo: 吃过capsule以后看到capsule绕路? capsule堵关键路口怎么办？
+        if numOfFoodLeft <= 2:
+          action = myProblem.reachOwnMidList(self, gameState, self.index)
+          return action
         if enemyScaredTimer[0] > 0 and enemyPos[0] != None:
           if enemyScaredTimer[1] > 0 and enemyPos[1] != None:
             timer = min(enemyScaredTimer[0],enemyScaredTimer[1])
@@ -343,6 +345,7 @@ class AttackAgent(CaptureAgent):
       # if enemyPos == [None, None] or (not close):
       if enemyPos == [None, None]:
         if (minDistToFood> minDistToOwnMid and numOfFoodCarried > 0) or numOfFoodLeft <= 2:
+          #fixme: left food <= 2什么策略
           # go back to midline
           action = myProblem.reachOwnMidList(self, gameState, self.index)
         else:
@@ -364,12 +367,13 @@ class AttackAgent(CaptureAgent):
         # judge enemy is ghost or pacman
         for enemy in enemyPos:
           if not (enemy is None) and enemy[0] <= self.midX:  # any one of enemies is PACMAN
-            # print("chase closest enemy pacman")
+            print("chase closest enemy pacman")
             action = myProblem.eatClosestEnemyPacman(self, gameState, self.index)
             return action
         if curPos[0] < self.midX:
           action = myProblem.reachOwnMidList(self, gameState, self.index)
         elif curPos in self.midLine:
+          print("wandering")
           action = myProblem.breakStalemate(self, gameState, self.index)
         else: # close and pacman on enemy's field
           if numOfFoodLeft > 2:
@@ -402,7 +406,6 @@ class AttackAgent(CaptureAgent):
     else:
       timer = None  # None for not using capsule logic
       if (enemyScaredTimer[0] > 0 or enemyScaredTimer[1] > 0) and curPos[0] < self.midX:  # enemy is scared
-        # todo: 吃过capsule以后看到capsule绕路? capsule堵关键路口怎么办？
         if enemyScaredTimer[0] > 0 and enemyPos[0] != None:
           if enemyScaredTimer[1] > 0 and enemyPos[1] != None:
             timer = min(enemyScaredTimer[0], enemyScaredTimer[1])
@@ -490,10 +493,12 @@ class AttackAgent(CaptureAgent):
 
     while not frontier.isEmpty():
       elapsed = (time.clock() - start)
-      # print("Time used:", elapsed)
+      if debug:
+        print("Time used:", elapsed)
       # todo : if elapsed >= 0.8 return None
       if elapsed >= 0.8:
-        # print("time exceed")
+        if debug:
+          print("time exceed")
         return "TIMEEXCEED" # for eatOneSafeFood time exceed
 
       current_node = frontier.pop()

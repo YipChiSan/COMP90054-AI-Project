@@ -470,6 +470,7 @@ class AgentRules:
     """
     legal = AgentRules.getLegalActions( state, agentIndex )
     if action not in legal:
+      # print("agentIndex",agentIndex)
       raise Exception("Illegal action " + str(action))
 
     # Update Configuration

@@ -857,7 +857,7 @@ def eatClosestEnemyPacman(agent, gameState, index):
         if enemyPos[0] >= agent.enemyMidX:
           enemyList.append(enemyPos)
   pos = gameState.getAgentPosition(index)
-  walls = getWallsWithDeadEnd(agent)
+  walls = getActualWalls(agent)
   action = minDistance(pos, enemyList, walls, agent)
   return action
 
