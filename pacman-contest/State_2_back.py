@@ -63,7 +63,7 @@ class State_2:
         score = self.gameState.getScore()
         reward = distFood + carry + score + distMid
         # reward = score / 100
-        print("index",self.myIndex,"Total:", reward, "Position:",self.myCurPosition," mid: ", distMid," food:", distFood, " carry:",carry," score:",score,"midline",self.getOurMiddleLine())
+        # print("index",self.myIndex,"Total:", reward, "Position:",self.myCurPosition," mid: ", distMid," food:", distFood, " carry:",carry," score:",score,"midline",self.getOurMiddleLine())
         # if (self.myCurPosition[0] == self.middleLineX) and (self.prevFoodCarrying > 0 ):
         #     print(self.gameState.getScore())
         #     print(self.myCurPosition[0],self.middleLineX)

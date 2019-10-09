@@ -20,9 +20,13 @@ class RecordAgent(CaptureAgent):
         # STEP 3: Get state features
         currentState = self.State_1(self, gameState).getCurrentState(self.initState)
         row = self.previousState[self.index] + currentState
+        # print(self.previousState[self.index])
+        scoreChange = 0
+        if not (self.previousState[self.index] == []):
+            scoreChange = currentState[0] - self.previousState[self.index][0]
         self.previousState[self.index] = currentState
-
+        print(self.index,scoreChange)
         # STEP 4: Append each row to a list (?)
-        print(row) if len(row) > len(currentState) else None
+        # print(row) if len(row) > len(currentState) else None
         ##################################################################
         return self.action.pop(0)[1]
