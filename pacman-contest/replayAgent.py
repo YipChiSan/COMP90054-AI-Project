@@ -25,7 +25,8 @@ class RecordAgent(CaptureAgent):
         if not (self.previousState[self.index] == []):
             scoreChange = currentState[0] - self.previousState[self.index][0]
         self.previousState[self.index] = currentState
-        print(self.index,scoreChange)
+        print(gameState)
+
         # STEP 4: Append each row to a list (?)
         # print(row) if len(row) > len(currentState) else None
         ##################################################################

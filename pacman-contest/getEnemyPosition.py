@@ -9,7 +9,7 @@ class enemyPosition:
         self.firstEnemy = []
         self.secondEnemy = []
         self.start = True
-        self.moves = [(+1,0),(-1,0),(0,+1),(0,-1)]
+        self.moves = [(+1,0),(-1,0),(0,+1),(0,-1),(0,0)]
         self.death = {}
     def initial(self,gameState,isRed,map):
         if self.start:
@@ -43,9 +43,12 @@ class enemyPosition:
         return validPosition
 
     def updateWithDeath(self,index):
+
         if self.death[index] == 0:
             self.enemyPosition[index] = [self.enemyInitial[index]]
             self.death[index] = 4
+        if myTeam.debug:
+            print("update with death",self.enemyPosition)
 
     def updateWithVision(self,index,pos):
         self.enemyPosition[index] = []
@@ -72,7 +75,7 @@ class enemyPosition:
     def checkNoiseDistance(self,noise,pos1,pos2):
         return (self.calculateDistance(pos1,pos2)>= noise - 6) and (self.calculateDistance(pos1,pos2) <= noise + 6)
 
-    def updateWithNoise(self,noiseDistance,index,position):
+    def updateWithNoise(self,noiseDistance,index,position,enemyIndex):
         hasMoved = index - 1
         notMoved = index + 1
         if hasMoved< 0:
@@ -81,22 +84,21 @@ class enemyPosition:
             notMove = 0
         before1 = self.enemyPosition[hasMoved]
         before2 = self.enemyPosition[notMoved]
-        hasMovedNoise = self.getNoiseDistance(noiseDistance[hasMoved],position)
-        notMovedNoise = self.getNoiseDistance(noiseDistance[notMoved],position)
         newEnemyPosition = []
-        for pos in self.enemyPosition[hasMoved]:
-            for move in self.moves:
-                newPos = (pos[0] + move[0],pos[1] + move[1])
-                if newPos in self.validPosition and self.checkNoiseDistance(noiseDistance[hasMoved],newPos,position):
-                    newEnemyPosition.append(newPos)
-        self.enemyPosition[hasMoved] = list(set(newEnemyPosition))
-        newEnemyPosition = []
-        for pos in self.enemyPosition[notMoved]:
-            if self.checkNoiseDistance(noiseDistance[notMoved],pos,position):
-                newEnemyPosition.append(pos)
-        self.enemyPosition[notMoved] = list(set(newEnemyPosition))
+        if enemyIndex == hasMoved:
+            for pos in self.enemyPosition[hasMoved]:
+                for move in self.moves:
+                    newPos = (pos[0] + move[0],pos[1] + move[1])
+                    if newPos in self.validPosition and self.checkNoiseDistance(noiseDistance[hasMoved],newPos,position):
+                        newEnemyPosition.append(newPos)
+            self.enemyPosition[hasMoved] = list(set(newEnemyPosition))
+        else:
+            for pos in self.enemyPosition[notMoved]:
+                if self.checkNoiseDistance(noiseDistance[notMoved],pos,position):
+                    newEnemyPosition.append(pos)
+            self.enemyPosition[notMoved] = list(set(newEnemyPosition))
         if myTeam.debug:
-            print("index:",index,"position",position,"noise distance",noiseDistance,"enemyPosition:",self.enemyPosition,"before:",before1,before2)
+            print("index:",index,"position",position,"enemyIndex,",enemyIndex,"noise distance",noiseDistance,"enemyPosition:",self.enemyPosition,"before:",before1,before2)
         if len(self.enemyPosition[notMoved]) ==0 or len(self.enemyPosition[hasMoved]) ==0:
             print("????")
         for i in self.death:
