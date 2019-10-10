@@ -369,7 +369,7 @@ class EatOneSafeFoodProblem:
         self.middleLine = agent.midLine
         self.enemyMiddleLine = agent.enemyMidLine
         self.enemyIndices = agent.getOpponents(gameState)
-        self.foods = agent.getFood(gameState)
+        self.foods = agent.foodGrid
         self.foodList = self.foods.asList()
         self.enemyPositions = set()
         for idx in self.enemyIndices:
@@ -496,7 +496,7 @@ class EscapeProblem1:
         self.middleLine = agent.midLine
         self.enemyMiddleLine = agent.enemyMidLine
         self.enemyIndices = agent.getOpponents(gameState)
-        self.foods = agent.getFood(gameState)
+        self.foods = agent.foodGrid(gameState)
         self.foodList = self.foods.asList()
         self.enemyPositions = set()
         for idx in self.enemyIndices:
@@ -719,18 +719,24 @@ def getWallsWithCapsules(agent):
 def minDistance(pos, posList, walls, agent):
     minDist = 9999
     action = Directions.STOP
+    # print(walls)
     for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
         x, y = pos
         dx, dy = Actions.directionToVector(direction)
         nextx, nexty = int(x + dx), int(y + dy)
+        # print("next POS:", (nextx, nexty))
+        # print(walls[nextx][nexty])
         if not walls[nextx][nexty]:
+            # print("candidate direction", direction)
             for target in posList:
                 dist = agent.distancer.getDistance((nextx, nexty), target)
                 if dist < minDist:
-                    goal = target
+                    # print("current dist",dist)
+                    # print("current goal",target)
+                    # goal = target
                     minDist = dist
                     action = direction
-    print("target food:", goal)
+    # print("target food:", goal)
     return action
 
 
@@ -793,7 +799,7 @@ def getFoodExceptDeadEnds(agent, gameState):
 
 
 def eatCloseFood(agent, gameState, index):
-    food = agent.getFood(gameState)
+    food = agent.foodGrid
     foodList = food.asList()
     pos = gameState.getAgentPosition(index)
     walls = getActualWalls(agent)
