@@ -1,5 +1,3 @@
-#!bin/bash
-
 git push --delete origin submission-contest
 git tag --delete submission-contest
 git tag submission-contest
