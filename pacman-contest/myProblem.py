@@ -1,6 +1,5 @@
 import copy
 
-import myTeam
 from myTeam import *
 from game import *
 from collections import defaultdict

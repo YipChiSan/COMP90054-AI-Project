@@ -4,6 +4,8 @@
         #  'getScore', 'getWalls', 'hasFood', 'hasWall', 'initialize', 'isOnRedTeam', 'isOver', 'isRed', 'makeObservation',
         #  'redTeam', 'teams']
 import myTeam
+debug = False
+
 class enemyPosition:
     def __init__(self):
         self.firstEnemy = []
@@ -47,7 +49,8 @@ class enemyPosition:
         if self.death[index] == 0:
             self.enemyPosition[index] = [self.enemyInitial[index]]
             self.death[index] = 4
-        if myTeam.debug:
+        # if myTeam.debug:
+        if debug:
             print("update with death",self.enemyPosition)
 
     def updateWithVision(self,index,pos):
@@ -97,7 +100,8 @@ class enemyPosition:
                 if self.checkNoiseDistance(noiseDistance[notMoved],pos,position):
                     newEnemyPosition.append(pos)
             self.enemyPosition[notMoved] = list(set(newEnemyPosition))
-        if myTeam.debug:
+        # if myTeam.debug:
+        if debug:
             print("index:",index,"position",position,"enemyIndex,",enemyIndex,"noise distance",noiseDistance,"enemyPosition:",self.enemyPosition,"before:",before1,before2)
         if len(self.enemyPosition[notMoved]) ==0 or len(self.enemyPosition[hasMoved]) ==0:
             print("????")
