@@ -766,11 +766,12 @@ def minDistanceAvoidGhost(pos, posList, walls, agent, ghostList):
         adjacentToGhost = False
         if not walls[nextx][nexty]:
             # action shouldn't lead to the adjacent position from ghost
-            for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-                dx, dy = Actions.directionToVector(direction)
+            for direction2 in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+                dx, dy = Actions.directionToVector(direction2)
                 adjacentx, adjacenty = int(x + dx), int(y + dy)
                 if (adjacentx, adjacenty) in ghostList:
                     adjacentToGhost = True
+                    break
             if adjacentToGhost == True:
                 continue
             for target in posList:
@@ -778,6 +779,7 @@ def minDistanceAvoidGhost(pos, posList, walls, agent, ghostList):
                 if dist < minDist:
                     minDist = dist
                     action = direction
+    # print("minDistanceAvoidGhost",action)
     return action
 
 
@@ -951,17 +953,22 @@ def foolGhost(agent, gameState, index):
 # used when in stalemate
 def breakStalemate(agent, gameState, index):
     x, y = gameState.getAgentPosition(index)
+    walls = getActualWalls(agent)
+    lastAction = agent.lastAction
+    if lastAction != None:
+        dx, dy = Actions.directionToVector(lastAction)
+        nextx, nexty = int(x + dx), int(y + dy)
+        if not walls[nextx][nexty]:
+            return lastAction
     if agent.red:  # red team back to left
-        for direction in [Directions.WEST, Directions.NORTH, Directions.SOUTH, Directions.EAST]:
+        for direction in [Directions.NORTH, Directions.SOUTH, Directions.WEST, Directions.EAST]:
             dx, dy = Actions.directionToVector(direction)
             nextx, nexty = int(x + dx), int(y + dy)
-            walls = getActualWalls(agent)
             if not walls[nextx][nexty]:
                 return direction
     else:  # blue team back to right
-        for direction in [Directions.EAST, Directions.NORTH, Directions.SOUTH, Directions.WEST]:
+        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             dx, dy = Actions.directionToVector(direction)
             nextx, nexty = int(x + dx), int(y + dy)
-            walls = getActualWalls(agent)
             if not walls[nextx][nexty]:
                 return direction
