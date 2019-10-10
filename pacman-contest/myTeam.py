@@ -364,7 +364,7 @@ class AttackAgent(CaptureAgent):
                 deadEnemy[i] = 4
 
     def chooseAction(self, gameState):
-        if self.debug:
+        if debug:
             print("lastaction:",self.lastAction)
         for i in deadEnemy:
             if deadEnemy[i] > 0:
