@@ -12,8 +12,7 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 import sys
-
-sys.path.append('teams/kdbnb/pacman-contest/')
+sys.path.append('teams/kdbnb/')
 
 import copy
 import InitialMap
@@ -34,7 +33,6 @@ debug = False
 enemyPosition = getEnemyPosition.enemyPosition()
 deadEnemy = {}
 
-
 def createTeam(firstIndex, secondIndex, isRed,
                first='AttackAgent', second='AttackAgent'):
     """
@@ -54,7 +52,6 @@ def createTeam(firstIndex, secondIndex, isRed,
 
     # The following line is an example only; feel free to change it.
     return [eval(first)(firstIndex), eval(second)(secondIndex)]
-
 
 ##########
 # Agents #
@@ -110,7 +107,6 @@ def getMapMatrix(gameState):
         y = mapHeight - 1 - blueCapsule[1]
         mapMatrix[y][x] = 5.0
     return mapMatrix
-
 
 class AttackAgent(CaptureAgent):
     def registerInitialState(self, gameState):
@@ -607,7 +603,6 @@ class AttackAgent(CaptureAgent):
         priority = heuristic(problem.getStartState(gameState, self.getFood(gameState)))  # f = h + g(start is 0)
         frontier.push(start_node, priority)
 
-
         while not frontier.isEmpty():
             elapsed = (time.clock() - start)
             if debug:
@@ -638,3 +633,8 @@ class AttackAgent(CaptureAgent):
                             priority = cost_g + heuristic(successor[0])
                             path = current_node[1] + [successor[1]]
                             frontier.push((successor[0], path, cost_g), priority)
+
+
+
+
+
