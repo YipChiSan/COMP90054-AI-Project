@@ -34,6 +34,7 @@ debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 deadEnemy = {}
 
+
 def createTeam(firstIndex, secondIndex, isRed,
                first='AttackAgent', second='AttackAgent'):
     """
