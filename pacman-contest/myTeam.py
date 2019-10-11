@@ -350,6 +350,10 @@ class AttackAgent(CaptureAgent):
             if len(self.capsuleBeenEaten(gameState)) != 0:
                 enemyPosition.updateWithEatenFood(list(self.capsuleBeenEaten(gameState))[0])
             a = enemyPosition.enemyPosition
+            return a
+        return {}
+
+
             # if debug:
             #     self.debugClear()
             #     for i in a[1]:

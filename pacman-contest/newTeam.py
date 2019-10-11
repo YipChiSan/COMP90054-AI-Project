@@ -351,6 +351,8 @@ class AttackAgent(CaptureAgent):
             if len(self.capsuleBeenEaten(gameState)) != 0:
                 enemyPosition.updateWithEatenFood(list(self.capsuleBeenEaten(gameState))[0])
             a = enemyPosition.enemyPosition
+            return a
+        return {}
             # if debug:
             #     self.debugClear()
             #     for i in a[1]:
@@ -393,6 +395,30 @@ class AttackAgent(CaptureAgent):
                 deadEnemy[i] += -1
         curPos = gameState.getAgentPosition(self.index)
         block = self.getBlockRegions(gameState)
+        self.debugClear()
+        if debug:
+            for i in block:
+                if self.index <2:
+                    self.debugDraw(i, [1, 0, 0])
+                else:
+                    self.debugDraw(i,[0,1,0])
+        if block != []:
+            time.sleep(1)
+
+        teammateIndex = self.getIndex(2)
+        teammatePos = gameState.getAgentPosition(teammateIndex)
+        #todo:精确位置包括在enemyPosition中，可以去掉
+        enemyIndices = self.getOpponents(gameState)
+        enemyPos = []
+        for idx in enemyIndices:
+            enemyPos.append(gameState.getAgentPosition(idx))
+        # type: 'dict'
+        # key: enemyIndex
+        # value: list of positions
+        enemyPosition = self.getEnemyPosition(gameState)
+        ghostEnemy = self.ghostEnemy(enemyPos)
+        pacmanEnemy = self.pacmanEnemy(enemyPos)
+        print(enemyPosition)
 
 
 
