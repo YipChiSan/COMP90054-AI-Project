@@ -496,7 +496,7 @@ class EscapeProblem1:
         self.middleLine = agent.midLine
         self.enemyMiddleLine = agent.enemyMidLine
         self.enemyIndices = agent.getOpponents(gameState)
-        self.foods = agent.foodGrid(gameState)
+        self.foods = agent.foodGrid
         self.foodList = self.foods.asList()
         self.enemyPositions = set()
         for idx in self.enemyIndices:
