@@ -29,7 +29,7 @@ import getEnemyPosition
 #################
 # Team creation #
 #################
-debug = True
+debug = False
 # debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 deadEnemy = {}
@@ -403,8 +403,8 @@ class AttackAgent(CaptureAgent):
                     self.debugDraw(i, [1, 0, 0])
                 else:
                     self.debugDraw(i,[0,1,0])
-        if block != []:
-            time.sleep(1)
+        # if block != []:
+        #     time.sleep(1)
 
         teammateIndex = self.getIndex(2)
         teammatePos = gameState.getAgentPosition(teammateIndex)

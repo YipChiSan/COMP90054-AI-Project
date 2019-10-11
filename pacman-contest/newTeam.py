@@ -29,7 +29,7 @@ import getEnemyPosition
 #################
 # Team creation #
 #################
-debug = True
+debug = False
 # debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 deadEnemy = {}
@@ -351,16 +351,15 @@ class AttackAgent(CaptureAgent):
             if len(self.capsuleBeenEaten(gameState)) != 0:
                 enemyPosition.updateWithEatenFood(list(self.capsuleBeenEaten(gameState))[0])
             a = enemyPosition.enemyPosition
-            return a
-        return {}
-            # if debug:
-            #     self.debugClear()
-            #     for i in a[1]:
-            #         self.debugDraw(i, [0, .3, .9])
-            #     # for i in enemyPosition.validPosition:
-            #     #   self.debugDraw(i,[0,0,1])
-            #     for i in a[3]:
-            #         self.debugDraw(i, [.1, .75, .7])
+            if debug:
+                self.debugClear()
+                for i in a[1]:
+                    self.debugDraw(i, [0, .3, .9])
+                # for i in enemyPosition.validPosition:
+                #   self.debugDraw(i,[0,0,1])
+                for i in a[3]:
+                    self.debugDraw(i, [.1, .75, .7])
+
 
     def updateDeath(self, gameState, action):
         enemyDeath = self.eatEnemy1(gameState, action)
@@ -378,12 +377,29 @@ class AttackAgent(CaptureAgent):
             if not enemy is None:
                 enemyDistance = self.distancer.getDistance(cur,enemy)
                 depth = enemyDistance / 2
-                print(self.index,cur,enemy,depth)
+                if debug:
+                    print(self.index,cur,enemy,depth)
                 for cell in self.deadEnd:
                     if self.deadEnd[cell] >= depth:
                         block.append(cell)
         return list(set(block))
 
+    def getNeedOfDefenceEnemyPosition(self, gameState, enemyPosition):
+        curFoods = self.getFoodYouAreDefending(gameState).asList()
+        l = list(enemyPosition.values())
+        enemyPositionList = [item for sublist in l for item in sublist]
+
+        minDis = 999999
+        minPos = None
+        for i in curFoods:
+            for j in enemyPositionList:
+                print(i,j)
+                dis = self.distancer.getDistance(i, j)
+                if dis < minDis:
+                    minDis = dis
+                    minPos = j
+        self.debugDraw(minPos, [1,0,0], True) if minPos else None
+        return minPos
 
 
 
@@ -394,7 +410,9 @@ class AttackAgent(CaptureAgent):
             if deadEnemy[i] > 0:
                 deadEnemy[i] += -1
         curPos = gameState.getAgentPosition(self.index)
+        t = time.clock()
         block = self.getBlockRegions(gameState)
+        print('='*40,time.clock() - t)
         self.debugClear()
         if debug:
             for i in block:
@@ -402,8 +420,6 @@ class AttackAgent(CaptureAgent):
                     self.debugDraw(i, [1, 0, 0])
                 else:
                     self.debugDraw(i,[0,1,0])
-        if block != []:
-            time.sleep(1)
 
         teammateIndex = self.getIndex(2)
         teammatePos = gameState.getAgentPosition(teammateIndex)
@@ -415,10 +431,18 @@ class AttackAgent(CaptureAgent):
         # type: 'dict'
         # key: enemyIndex
         # value: list of positions
-        enemyPosition = self.getEnemyPosition(gameState)
-        ghostEnemy = self.ghostEnemy(enemyPos)
-        pacmanEnemy = self.pacmanEnemy(enemyPos)
-        print(enemyPosition)
+        self.getEnemyPosition(gameState)
+        # ghostEnemy = self.ghostEnemy(enemyPos)
+        # pacmanEnemy = self.pacmanEnemy(enemyPos)
+        enemyPositionToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
+        # t = time.clock()
+        print(curPos, [enemyPositionToDefend], enemyPosition)
+        action = myProblem.minDistance(curPos, [enemyPositionToDefend], self.walls, self)
+        print(action)
+        # print('='*40,time.clock() - t)
+        # print('===',enemyPositionToDefend)
+        self.updateDeath(gameState, action)
+        return action
 
 
 
