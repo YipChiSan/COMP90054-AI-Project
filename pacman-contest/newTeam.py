@@ -14,23 +14,16 @@
 import sys
 sys.path.append('teams/kdbnb/')
 
-import copy
 import InitialMap
 from captureAgents import CaptureAgent
-import random, time, util
-from game import *
-import game
-from layout import Grid
 import myProblem
-from State_1 import *
 import random
 import getEnemyPosition
 
 #################
 # Team creation #
 #################
-debug = False
-# debug = True
+debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 deadEnemy = {}
 
@@ -398,10 +391,24 @@ class AttackAgent(CaptureAgent):
                 if dis < minDis:
                     minDis = dis
                     minPos = j
-        self.debugDraw(minPos, [1,0,0], True) if minPos else None
+        if debug:
+            self.debugDraw(minPos, [.9,0,0]) if minPos else None
         return minPos
 
-
+    def getFoodFarFromEnemy(self, gameState, curPos, enemyPositionToDefend):
+        curFoods = self.getFood(gameState).asList()
+        minDis = 999999
+        minPos = None
+        for i in curFoods:
+            distanceToFood = self.distancer.getDistance(curPos, i)
+            distanceToGhost = self.distancer.getDistance(curPos, enemyPositionToDefend)
+            dis = distanceToFood - distanceToGhost
+            if dis < minDis:
+                minDis = dis
+                minPos = i
+        if debug:
+            self.debugDraw(minPos, [.98,.41,.07]) if minPos else None
+        return minPos
 
     def chooseAction(self, gameState):
         if debug:
@@ -410,9 +417,7 @@ class AttackAgent(CaptureAgent):
             if deadEnemy[i] > 0:
                 deadEnemy[i] += -1
         curPos = gameState.getAgentPosition(self.index)
-        t = time.clock()
         block = self.getBlockRegions(gameState)
-        print('='*40,time.clock() - t)
         self.debugClear()
         if debug:
             for i in block:
@@ -435,12 +440,9 @@ class AttackAgent(CaptureAgent):
         # ghostEnemy = self.ghostEnemy(enemyPos)
         # pacmanEnemy = self.pacmanEnemy(enemyPos)
         enemyPositionToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
-        # t = time.clock()
-        print(curPos, [enemyPositionToDefend], enemyPosition)
+        foodFarFromEnemy = self.getFoodFarFromEnemy(gameState, curPos, enemyPositionToDefend)
         action = myProblem.minDistance(curPos, [enemyPositionToDefend], self.walls, self)
-        print(action)
-        # print('='*40,time.clock() - t)
-        # print('===',enemyPositionToDefend)
+        print('===',foodFarFromEnemy)
         self.updateDeath(gameState, action)
         return action
 
