@@ -50,8 +50,8 @@ class enemyPosition:
             self.enemyPosition[index] = [self.enemyInitial[index]]
             self.death[index] = 4
         # if myTeam.debug:
-        if debug:
-            print("update with death",self.enemyPosition)
+        # if debug:
+        #     print("update with death",self.enemyPosition)
 
     def updateWithVision(self,index,pos):
         self.enemyPosition[index] = []
@@ -84,7 +84,7 @@ class enemyPosition:
         if hasMoved< 0:
             hasMoved = 3
         if notMoved > 3:
-            notMove = 0
+            notMoved = 0
         before1 = self.enemyPosition[hasMoved]
         before2 = self.enemyPosition[notMoved]
         newEnemyPosition = []
@@ -101,8 +101,8 @@ class enemyPosition:
                     newEnemyPosition.append(pos)
             self.enemyPosition[notMoved] = list(set(newEnemyPosition))
         # if myTeam.debug:
-        if debug:
-            print("index:",index,"position",position,"enemyIndex,",enemyIndex,"noise distance",noiseDistance,"enemyPosition:",self.enemyPosition,"before:",before1,before2)
+        # if debug:
+            # print("index:",index,"position",position,"enemyIndex,",enemyIndex,"noise distance",noiseDistance,"enemyPosition:",self.enemyPosition,"before:",before1,before2)
         if len(self.enemyPosition[notMoved]) ==0 or len(self.enemyPosition[hasMoved]) ==0:
             print("????")
         for i in self.death:
