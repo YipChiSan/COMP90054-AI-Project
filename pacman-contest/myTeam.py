@@ -29,7 +29,7 @@ import getEnemyPosition
 #################
 # Team creation #
 #################
-debug = False
+debug = True
 # debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 deadEnemy = {}
@@ -208,6 +208,16 @@ class AttackAgent(CaptureAgent):
         else:
             return self.getIndex(2)
 
+    # def capsuleEatenLastMove(self, gameState):
+    #   prevGameState = self.getPreviousObservation()
+    #   if prevGameState != None:
+    #     prevCapsules = self.getCapsules(prevGameState)
+    #     curCapsules = self.getCapsules(gameState)
+    #     for capsule in prevCapsules:
+    #       if capsule not in curCapsules:
+    #         return True
+    #   return False
+
     def pacmanEnemy(self, enemyList):
         res = []
         for pos in enemyList:
@@ -255,8 +265,8 @@ class AttackAgent(CaptureAgent):
         for index in self.enemyIndex:
             curPosE = gameState.getAgentPosition(index)
             nextPosE = nextGameState.getAgentPosition(index)
-            if debug:
-                print("Sel next pos:", nextPos, "Enemy Current", curPosE, "Enemy Next", nextPosE)
+            # if debug:
+                # print("Sel next pos:", nextPos, "Enemy Current", curPosE, "Enemy Next", nextPosE)
             if (gameState.getInitialAgentPosition(index) == nextPosE):
                 eatEnemy[index] = True
             else:
@@ -340,14 +350,18 @@ class AttackAgent(CaptureAgent):
             if len(self.capsuleBeenEaten(gameState)) != 0:
                 enemyPosition.updateWithEatenFood(list(self.capsuleBeenEaten(gameState))[0])
             a = enemyPosition.enemyPosition
-            if debug:
-                self.debugClear()
-                for i in a[1]:
-                    self.debugDraw(i, [0, .3, .9])
-                # for i in enemyPosition.validPosition:
-                #   self.debugDraw(i,[0,0,1])
-                for i in a[3]:
-                    self.debugDraw(i, [.1, .75, .7])
+            return a
+        return {}
+
+
+            # if debug:
+            #     self.debugClear()
+            #     for i in a[1]:
+            #         self.debugDraw(i, [0, .3, .9])
+            #     # for i in enemyPosition.validPosition:
+            #     #   self.debugDraw(i,[0,0,1])
+            #     for i in a[3]:
+            #         self.debugDraw(i, [.1, .75, .7])
 
     def updateDeath(self, gameState, action):
         enemyDeath = self.eatEnemy1(gameState, action)
@@ -356,6 +370,24 @@ class AttackAgent(CaptureAgent):
                 enemyPosition.updateWithDeath(i)
                 deadEnemy[i] = 4
 
+
+    def getBlockRegions(self,gameState):
+        block = []
+        cur = gameState.getAgentPosition(self.index)
+        for i in self.enemyIndex:
+            enemy = gameState.getAgentPosition(i)
+            if not enemy is None:
+                enemyDistance = self.distancer.getDistance(cur,enemy)
+                depth = enemyDistance / 2
+                print(self.index,cur,enemy,depth)
+                for cell in self.deadEnd:
+                    if self.deadEnd[cell] >= depth:
+                        block.append(cell)
+        return list(set(block))
+
+
+
+
     def chooseAction(self, gameState):
         if debug:
             print("last action:",self.lastAction)
@@ -363,6 +395,17 @@ class AttackAgent(CaptureAgent):
             if deadEnemy[i] > 0:
                 deadEnemy[i] += -1
         curPos = gameState.getAgentPosition(self.index)
+        block = self.getBlockRegions(gameState)
+        self.debugClear()
+        if debug:
+            for i in block:
+                if self.index <2:
+                    self.debugDraw(i, [1, 0, 0])
+                else:
+                    self.debugDraw(i,[0,1,0])
+        if block != []:
+            time.sleep(1)
+
         teammateIndex = self.getIndex(2)
         teammatePos = gameState.getAgentPosition(teammateIndex)
         #todo:精确位置包括在enemyPosition中，可以去掉
@@ -402,6 +445,8 @@ class AttackAgent(CaptureAgent):
         if self.red:
             timer = None  # None for not using capsule logic
             if (enemyScaredTimer[0] > 0 or enemyScaredTimer[1] > 0) and curPos[0] > self.midX:  # enemy is scared
+                # print("enemyScaredTimer:", enemyScaredTimer)
+                # print("minDistToOwnMid:", minDistToOwnMid)
                 if numOfFoodLeft <= 2:
                     action = myProblem.reachOwnMidList(self, gameState, self.index)
                     self.lastAction = action
@@ -537,6 +582,7 @@ class AttackAgent(CaptureAgent):
                                     if debug:
                                         print("eatCloseFood4", action)
                         else:
+                            # print("eatOneSafeFood")
                             action = actions[0]
                             if debug:
                                 print("EatOneSafeFoodProblem", action)
@@ -549,6 +595,7 @@ class AttackAgent(CaptureAgent):
                         escapeProblem = myProblem.EscapeProblem1(gameState, self)
                         actions = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)
                         if actions == None or actions == "TIMEEXCEED":
+                            # print("reachOwnMidWithEnemyInsight2")
                             action = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
                             if debug:
                                 print("reachOwnMidWithEnemyInsight2", action)
