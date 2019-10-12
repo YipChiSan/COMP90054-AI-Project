@@ -753,7 +753,7 @@ class AttackAgent(CaptureAgent):
                 if debug:
                     print("Time used:", elapsed)
                     print("time exceed")
-                return "TIMEEXCEED"  # for eatOneSafeFood time exceed
+                return "TIMEEXCEED",None  # for eatOneSafeFood time exceed
             else:
                 current_node = frontier.pop()
                 if current_node[0] in best_g.keys():  # reopen
@@ -775,6 +775,7 @@ class AttackAgent(CaptureAgent):
                             priority = cost_g + heuristic(successor[0])
                             path = current_node[1] + [successor[1]]
                             frontier.push((successor[0], path, cost_g), priority)
+        return None,None
 
 
 

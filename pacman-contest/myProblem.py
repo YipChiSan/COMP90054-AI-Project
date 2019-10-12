@@ -1037,16 +1037,16 @@ def breakStalemate(agent, gameState, index):
         dx, dy = Actions.directionToVector(lastAction)
         nextx, nexty = int(x + dx), int(y + dy)
         if not walls[nextx][nexty]:
-            return lastAction
+            return lastAction,(nextx,nexty)
     if agent.red:  # red team back to left
         for direction in [Directions.NORTH, Directions.SOUTH, Directions.WEST]:  # , Directions.EAST]:
             dx, dy = Actions.directionToVector(direction)
             nextx, nexty = int(x + dx), int(y + dy)
             if not walls[nextx][nexty]:
-                return direction
+                return direction,(nextx,nexty)
     else:  # blue team back to right
         for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST]:  # , Directions.WEST]:
             dx, dy = Actions.directionToVector(direction)
             nextx, nexty = int(x + dx), int(y + dy)
             if not walls[nextx][nexty]:
-                return direction
+                return direction,(nextx,nexty)
