@@ -724,19 +724,24 @@ def minDistance(pos, posList, walls, agent):
         x, y = pos
         dx, dy = Actions.directionToVector(direction)
         nextx, nexty = int(x + dx), int(y + dy)
-        # print("next POS:", (nextx, nexty))
-        # print(walls[nextx][nexty])
-        if not walls[nextx][nexty]:
-            # print("candidate direction", direction)
+        wallsList = walls.asList()
+        # print("[minDistance]walls", walls)
+        # print("[minDistance]wallsList", wallsList)
+        # print("[minDistance]next POS:", (nextx, nexty))
+        # print("[minDistance]action", direction)
+        # print("isWall in grid", walls[nextx][nexty])
+        # print("isWall in list", (nextx,nexty) in wallsList)
+        # if not walls[nextx][nexty]:
+        if not (nextx,nexty) in wallsList:
             for target in posList:
                 dist = agent.distancer.getDistance((nextx, nexty), target)
                 if dist < minDist:
-                    # print("current dist",dist)
-                    # print("current goal",target)
+                    # print("[minDistance]current dist",dist)
+                    # print("[minDistance]current goal",target)
                     # goal = target
                     minDist = dist
                     action = direction
-    # print("target food:", goal)
+    # print("[minDistance]target food:", goal)
     return action
 
 

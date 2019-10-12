@@ -15,6 +15,7 @@ import sys
 sys.path.append('teams/kdbnb/')
 
 import copy
+from util import manhattanDistance
 import InitialMap
 from captureAgents import CaptureAgent
 import random, time, util
@@ -136,14 +137,14 @@ class AttackAgent(CaptureAgent):
             deadEnemy[0] = 0
             deadEnemy[2] = 0
         enemyPosition.initial(gameState, self.red, self.mapMatrix)
-        if debug:
-            for i in self.deadEnd:
-                # x = i[1]
-                # y = len(self.mapMatrix) - i[0] -1
-                if i[0] <= self.midX:
-                    self.debugDraw(i, [self.deadEnd[i] / 100 + 0.3, 0, 0])
-                else:
-                    self.debugDraw(i, [0, self.deadEnd[i] / 100 + 0.3, 0])
+        # if debug:
+        #     for i in self.deadEnd:
+        #         # x = i[1]
+        #         # y = len(self.mapMatrix) - i[0] -1
+        #         if i[0] <= self.midX:
+        #             self.debugDraw(i, [self.deadEnd[i] / 100 + 0.3, 0, 0])
+        #         else:
+        #             self.debugDraw(i, [0, self.deadEnd[i] / 100 + 0.3, 0])
 
     def getMiddleX(self, gameState):
         mapWidth = gameState.data.layout.width
@@ -379,18 +380,32 @@ class AttackAgent(CaptureAgent):
             if not enemy is None:
                 enemyDistance = self.distancer.getDistance(cur,enemy)
                 depth = enemyDistance / 2
-                print(self.index,cur,enemy,depth)
+                if debug:
+                    print(self.index,cur,enemy,depth)
                 for cell in self.deadEnd:
                     if self.deadEnd[cell] >= depth:
                         block.append(cell)
         return list(set(block))
 
 
+    def curInsightOfEnemy(self, curPos, enemyList):
+        insight = False
+        for enemy in enemyList:
+            if enemy != None:
+                insight = insight or (manhattanDistance(curPos, enemy) <= 5)
+        return insight
 
+    def curCloseToEnemy(self, curPos, enemyList):
+        close = False
+        for enemy in enemyList:
+            if not (enemy is None):
+                close = close or (self.distancer.getDistance(curPos, enemy) <= 2)
+        return close
 
     def chooseAction(self, gameState):
         if debug:
-            print("last action:",self.lastAction)
+            print("index", self.index)
+            print("last action:", self.lastAction)
         for i in deadEnemy:
             if deadEnemy[i] > 0:
                 deadEnemy[i] += -1
@@ -438,10 +453,8 @@ class AttackAgent(CaptureAgent):
             if newDist < minDistToFood:
                 minDistToFood = newDist
 
-        close = False
-        for enemy in enemyPos:
-            if not (enemy is None):
-                close = close or (self.distancer.getDistance(curPos, enemy) <= 2)  # 5)
+        close = self.curCloseToEnemy(curPos, enemyPos)
+        insight = self.curInsightOfEnemy(curPos, enemyPos)
         if self.red:
             timer = None  # None for not using capsule logic
             if (enemyScaredTimer[0] > 0 or enemyScaredTimer[1] > 0) and curPos[0] > self.midX:  # enemy is scared
@@ -499,7 +512,7 @@ class AttackAgent(CaptureAgent):
             #todo: scaredTimer > 0; agent in our own place as white ghost
 
             if enemyPos == [None, None]:
-                if (minDistToFood > minDistToOwnMid and numOfFoodCarried > 0) or numOfFoodLeft <= 2:
+                if (minDistToFood > minDistToOwnMid + 5 and numOfFoodCarried > 0) or numOfFoodLeft <= 2:
                     # fixme: left food <= 2什么策略
                     # go back to midline
                     action = myProblem.reachOwnMidList(self, gameState, self.index)
@@ -551,16 +564,20 @@ class AttackAgent(CaptureAgent):
                             print("breakStalemate1", action)
                     # (curPos in midLine and no close enemy) or (curPos in enemy's side)
                     elif numOfFoodLeft > 2:
-                        curMinDistToGhost = self.getMinDistToEnemy(curPos, ghostEnemy)
-                        safeDepthFromStartZero = curMinDistToGhost // 2
                         # todo: need to complete situation that startState depth > 0
+                        # curMinDistToGhost = self.getMinDistToEnemy(curPos, ghostEnemy)
+                        # safeDepthFromStartZero = curMinDistToGhost // 2
                         # safe food depth from startState with depth 0
-                        if curPos in self.deadEnd:
+                        if curPos not in self.deadEnd: # fixme
                             for food in self.foodList:
-                                if food in self.deadEnd and self.deadEnd[food] > safeDepthFromStartZero:
+                                if food in block:
                                     # 修改了foodGrid和foodList，下一步之前不能再调eatOneSafeFoodProblem;
                                     self.foodGrid[food[0]][food[1]] = False
                                     self.foodList = self.foodGrid.asList()
+                        if debug:
+                            self.debugClear()
+                            for i in self.foodList:
+                                self.debugDraw(i,[1,0,0])
                         problem = myProblem.EatOneSafeFoodProblem(gameState, self)
                         actions = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic)
                         if actions == None or actions == "TIMEEXCEED":
@@ -741,7 +758,7 @@ class AttackAgent(CaptureAgent):
                     print("Time used:", elapsed)
                     print("time exceed")
                 return "TIMEEXCEED"  # for eatOneSafeFood time exceed
-
+            else:
                 current_node = frontier.pop()
                 if current_node[0] in best_g.keys():  # reopen
                     if best_g[current_node[0]] > current_node[2]:
