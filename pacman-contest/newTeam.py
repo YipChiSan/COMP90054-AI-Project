@@ -21,17 +21,19 @@ import random
 import getEnemyPosition
 import time
 import util
+import collections
 import gameData
 #################
 # Team creation #
 #################
-debug = True
+debug = False
 enemyPosition = getEnemyPosition.enemyPosition()
 gameData = gameData.gamedata()
 deadEnemy = {}
+teammateState = {}
+enemyCarryFoodNumber = collections.defaultdict(float)
 actionHistory = {}
 agentMod = {}
-teammateState = {}
 
 def createTeam(firstIndex, secondIndex, isRed,
                first='AttackAgent', second='AttackAgent'):
@@ -110,7 +112,6 @@ def getMapMatrix(gameState):
 
 class AttackAgent(CaptureAgent):
     def registerInitialState(self, gameState):
-        teammateState[self.index] = gameState
         CaptureAgent.registerInitialState(self, gameState)  # must be put ahead to set value of self.red
         self.walls = gameState.getWalls()
         self.midX = self.getMiddleX(gameState)
@@ -128,6 +129,7 @@ class AttackAgent(CaptureAgent):
         self.allienIndex = (self.index + 2) % 4
         self.lastAction = None
         self.manhattanSight = self.getManhattanSight()
+        teammateState[self.index] = gameState
         if self.red:
             self.ourRegionX = range(0,self.midX + 1)
             self.enemyRegionX = range(self.midX + 1,len(self.mapMatrix[0]))
@@ -336,7 +338,7 @@ class AttackAgent(CaptureAgent):
     def foodBeenEaten(self, gameState):
         if gameState.data.timeleft < 1190:
             curFoods = self.getFoodYouAreDefending(gameState).asList()
-            preFoods = self.getFoodYouAreDefending(self.getPreviousObservation()).asList()
+            preFoods = self.getFoodYouAreDefending(teammateState[self.allienIndex]).asList()
         else:
             return set()
         return set(preFoods) - set(curFoods)
@@ -443,6 +445,7 @@ class AttackAgent(CaptureAgent):
         # if debug:
         #     for i in enemyPositionList:
         #         self.debugDraw(i, [.9,0,0]) if i else None
+        print('@@@@@@@',enemyPositionList)
         return enemyPositionList
 
     def getFoodFarFromEnemy(self, gameState, curPos, enemyPositionToDefend):
@@ -469,12 +472,11 @@ class AttackAgent(CaptureAgent):
         return v
 
     def getEnemySight(self, enemyPosition):
-        sight = []
+        sight = collections.defaultdict(int)
         for enemyX, enemyY in enemyPosition:
-            tmp = []
-            for sightX ,sightY in self.manhattanSight:
-                tmp.append((enemyX + sightX, enemyY + sightY))
-            sight.append(tmp)
+            for sightX, sightY in self.manhattanSight:
+                s = (enemyX + sightX, enemyY + sightY)
+                sight[s] += 1
         return sight
 
     def curInsightOfEnemy(self, curPos, enemyList):
@@ -483,6 +485,39 @@ class AttackAgent(CaptureAgent):
             if enemy != None:
                 insight = insight or (manhattanDistance(curPos, enemy) <= 5)
         return insight
+
+    def scoreChanged(self, gameState):
+        myCurScore = 0
+        teammateNextMoveScore = 0
+        if gameState.data.timeleft < 1190:
+            myCurScore = gameState.data.score
+            teammateNextMoveScore = teammateState[self.allienIndex].data.score
+        scoreChange = myCurScore - teammateNextMoveScore
+        return scoreChange
+
+    def getEnemyCarryFoodNumber(self, gameState, enemyPosition):
+        enemyKeys = list(enemyPosition.keys())
+        foodBeenEaten = list(self.foodBeenEaten(gameState))
+        if len(foodBeenEaten) != 0:
+            food = foodBeenEaten[0]
+            if food in enemyPosition[enemyKeys[0]] and food not in enemyPosition[enemyKeys[1]]:
+                enemyCarryFoodNumber[enemyKeys[0]] += 1
+            elif food in enemyPosition[enemyKeys[1]] and food not in enemyPosition[enemyKeys[0]]:
+                enemyCarryFoodNumber[enemyKeys[1]] += 1
+            elif food in enemyPosition[enemyKeys[0]] and food in enemyPosition[enemyKeys[1]]:
+                enemyCarryFoodNumber[enemyKeys[1]] += 0.5
+        scoreChanged = self.scoreChanged(gameState)
+        if scoreChanged:
+            for pos in enemyPosition[enemyKeys[0]]:
+                if pos in self.enemyMidLine:
+                    enemyCarryFoodNumber[enemyKeys[0]] = 0
+            for pos in enemyPosition[enemyKeys[1]]:
+                if pos in self.enemyMidLine:
+                    enemyCarryFoodNumber[enemyKeys[1]] = 0
+        if deadEnemy[enemyKeys[0]]:
+            enemyCarryFoodNumber[enemyKeys[0]] = 0
+        if deadEnemy[enemyKeys[1]]:
+            enemyCarryFoodNumber[enemyKeys[1]] = 0
 
     def getClostestMidDistance(self,curPos,gameState):
         minDist = 999
@@ -538,6 +573,21 @@ class AttackAgent(CaptureAgent):
         print(enemyInRegion)
         # ghostEnemy = self.ghostEnemy(enemyPos)
         # pacmanEnemy = self.pacmanEnemy(enemyPos)
+        enemyPositionsToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
+
+        posibblePos = set()
+        for i in list((enemyPosition.enemyPosition).values()):
+            for j in i:
+                if j not in posibblePos:
+                    posibblePos.add(j)
+        enemySight = self.getEnemySight(list(posibblePos)) # [ [(),(),()...], [(),(),(),...] ]
+        if debug:
+            for i in enemySight:
+                self.debugDraw(i, [enemySight[i]/70+0.2,.2,.2])
+
+        self.getEnemyCarryFoodNumber(gameState, enemyPosition.enemyPosition)
+        print(enemyCarryFoodNumber)
+
         self.enemyPositionsToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
         enemySight = self.getEnemySight(self.enemyPositionsToDefend) # [ [(),(),()...], [(),(),(),...] ]
         # if debug:
@@ -593,6 +643,8 @@ class AttackAgent(CaptureAgent):
         else:
             action,target = self.defence()
         self.updateDeath(gameState, action)
+        print(self.index,time.clock() - s)
+        teammateState[self.index] = gameState.generateSuccessor(self.index,action)
         # print(self.index,time.clock() - s)
         actionHistory[self.index].append(action)
         # print(agentMod)
@@ -617,6 +669,7 @@ class AttackAgent(CaptureAgent):
         print(closestMid)
         action,target = myProblem.minDistance(self.curPos, [closestMid], self.walls, self)
         agentMod[self.index] = ("go defence",target)
+        return action, target
 
     def aStarSearch(self, problem, gameState, heuristic):
         start = time.clock()
