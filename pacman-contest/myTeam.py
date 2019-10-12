@@ -137,14 +137,14 @@ class AttackAgent(CaptureAgent):
             deadEnemy[0] = 0
             deadEnemy[2] = 0
         enemyPosition.initial(gameState, self.red, self.mapMatrix)
-        # if debug:
-        #     for i in self.deadEnd:
-        #         # x = i[1]
-        #         # y = len(self.mapMatrix) - i[0] -1
-        #         if i[0] <= self.midX:
-        #             self.debugDraw(i, [self.deadEnd[i] / 100 + 0.3, 0, 0])
-        #         else:
-        #             self.debugDraw(i, [0, self.deadEnd[i] / 100 + 0.3, 0])
+        if debug:
+            for i in self.deadEnd:
+                # x = i[1]
+                # y = len(self.mapMatrix) - i[0] -1
+                if i[0] <= self.midX:
+                    self.debugDraw(i, [self.deadEnd[i] / 100 + 0.3, 0, 0])
+                else:
+                    self.debugDraw(i, [0, self.deadEnd[i] / 100 + 0.3, 0])
 
     def getMiddleX(self, gameState):
         mapWidth = gameState.data.layout.width
@@ -410,15 +410,15 @@ class AttackAgent(CaptureAgent):
             if deadEnemy[i] > 0:
                 deadEnemy[i] += -1
         curPos = gameState.getAgentPosition(self.index)
-        block = self.getBlockRegions(gameState)
+        self.block = self.getBlockRegions(gameState)
         self.debugClear()
         if debug:
-            for i in block:
+            for i in self.block:
                 if self.index <2:
                     self.debugDraw(i, [1, 0, 0])
                 else:
                     self.debugDraw(i,[0,1,0])
-        # if block != []:
+        # if self.block != []:
         #     time.sleep(1)
 
         teammateIndex = self.getIndex(2)
@@ -463,7 +463,7 @@ class AttackAgent(CaptureAgent):
                 if numOfFoodLeft <= 2:
                     action = myProblem.reachOwnMidList(self, gameState, self.index)
                     self.lastAction = action
-                    self.updateDeath(gameState, action)
+                    # self.updateDeath(gameState, action)
                     return action
                 if enemyScaredTimer[0] > 0 and enemyPos[0] != None:
                     if enemyScaredTimer[1] > 0 and enemyPos[1] != None:
@@ -507,7 +507,7 @@ class AttackAgent(CaptureAgent):
                         action = myProblem.eatCloseFood(self, gameState, self.index)
                 if timer != None:
                     self.lastAction = action
-                    self.updateDeath(gameState, action)
+                    # self.updateDeath(gameState, action)
                     return action
             #todo: scaredTimer > 0; agent in our own place as white ghost
 
@@ -521,6 +521,9 @@ class AttackAgent(CaptureAgent):
                 else:
                     # separate two pacman
                     if self.index // 2 == 0 and self.randomSelectFood:
+                        if debug:
+                            print("bug check if entering")
+                            print("random select food branch")
                         # teammate may eat one food when crossing midline and led to bug
                         if curPos[0] >= self.enemyMidX or teammatePos[0] >= self.enemyMidX:
                             self.randomSelectFood = False
@@ -529,13 +532,13 @@ class AttackAgent(CaptureAgent):
                             if debug:
                                 print("entering randomSelectFood", action)
                         else:
-                            action = myProblem.eatCloseFood(self, gameState, self.index)
+                            action = myProblem.eatCloseFoodAvoidGhost(self, gameState, self.index)
                             if debug:
-                                print("entering eatCloseFood1", action)
+                                print("entering eatCloseFoodAvoidGhost1", action)
                     else:
-                        action = myProblem.eatCloseFood(self, gameState, self.index)
+                        action = myProblem.eatCloseFoodAvoidGhost(self, gameState, self.index)
                         if debug:
-                            print("entering eatCloseFood2", action)
+                            print("entering eatCloseFoodAvoidGhost2", action)
             else:
                 # judge enemy is ghost or pacman
                 # for enemy in enemyPos:
@@ -564,27 +567,19 @@ class AttackAgent(CaptureAgent):
                             print("breakStalemate1", action)
                     # (curPos in midLine and no close enemy) or (curPos in enemy's side)
                     elif numOfFoodLeft > 2:
-                        # todo: need to complete situation that startState depth > 0
-                        # curMinDistToGhost = self.getMinDistToEnemy(curPos, ghostEnemy)
-                        # safeDepthFromStartZero = curMinDistToGhost // 2
-                        # safe food depth from startState with depth 0
-                        if curPos not in self.deadEnd: # fixme
-                            for food in self.foodList:
-                                if food in block:
-                                    # 修改了foodGrid和foodList，下一步之前不能再调eatOneSafeFoodProblem;
-                                    self.foodGrid[food[0]][food[1]] = False
-                                    self.foodList = self.foodGrid.asList()
                         if debug:
                             self.debugClear()
                             for i in self.foodList:
                                 self.debugDraw(i,[1,0,0])
+
+                        # todo: need to complete situation that startState depth > 0
                         problem = myProblem.EatOneSafeFoodProblem(gameState, self)
                         actions = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic)
                         if actions == None or actions == "TIMEEXCEED":
                             if curPos in self.midLine:
-                                action = myProblem.eatCloseFood(self, gameState, self.index)
+                                action = myProblem.eatCloseFoodAvoidGhost(self, gameState, self.index)
                                 if debug:
-                                    print("eatCloseFood3", action)
+                                    print("eatCloseFoodAvoidGhost3", action)
                             #     action = myProblem.breakStalemate(self, gameState, self.index)
                             #     if debug:
                             #         print("breakStalemate2", action)
@@ -595,11 +590,10 @@ class AttackAgent(CaptureAgent):
                                     if debug:
                                         print("reachOwnMidWithEnemyInsight1", action)
                                 else:
-                                    action = myProblem.eatCloseFood(self, gameState, self.index)
+                                    action = myProblem.eatCloseFoodAvoidGhost(self, gameState, self.index)
                                     if debug:
-                                        print("eatCloseFood4", action)
+                                        print("eatCloseFoodAvoidGhost4", action)
                         else:
-                            # print("eatOneSafeFood")
                             action = actions[0]
                             if debug:
                                 print("EatOneSafeFoodProblem", action)
@@ -612,7 +606,6 @@ class AttackAgent(CaptureAgent):
                         escapeProblem = myProblem.EscapeProblem1(gameState, self)
                         actions = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)
                         if actions == None or actions == "TIMEEXCEED":
-                            # print("reachOwnMidWithEnemyInsight2")
                             action = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
                             if debug:
                                 print("reachOwnMidWithEnemyInsight2", action)
@@ -621,12 +614,15 @@ class AttackAgent(CaptureAgent):
                             if debug:
                                 print("EscapeProblem", action)
                 else: # curPos far from all ghost
-                    action = myProblem.eatCloseFood(self, gameState, self.index)
+                    action = myProblem.eatCloseFoodAvoidGhost(self, gameState, self.index)
                     if debug:
-                        print("eatCloseFood5", action)
+                        print("eatCloseFoodAvoidGhost5", action)
             self.lastAction = action
-            self.updateDeath(gameState, action)
+            # self.updateDeath(gameState, action)
             return action
+
+
+
         # TODO: pac man is of blue side
         else:
             timer = None  # None for not using capsule logic
