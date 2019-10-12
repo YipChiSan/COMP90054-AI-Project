@@ -873,8 +873,8 @@ def reachOwnMidWithEnemyInsight(agent, gameState, index):
     walls = getActualWalls(agent)
     for ghost in ghostList:  # x y of deadEnd is reversed
         walls[ghost[0]][ghost[1]] = True
-    action = minDistanceAvoidGhost(pos, middleList, walls, agent, ghostList)
-    return action
+    action,target = minDistanceAvoidGhost(pos, middleList, walls, agent, ghostList)
+    return action,target
 
 
 def reachEnemyMidList(agent, gameState, index):
