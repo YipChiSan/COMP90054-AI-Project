@@ -730,6 +730,7 @@ def getWallsWithEnemy(gameState, agent, ghostList):
         walls[pos[0]][pos[1]] = True
     return walls
 
+
 def getWallsWithEnemyAndDeadEnd(gameState, agent, ghostList):
     walls = copy.deepcopy(agent.walls)
     for pos in ghostList:  # x y of deadEnd is reversed
@@ -754,6 +755,7 @@ def getWallsWithEnemyAndBlock(gameState, agent, ghostList):
 def minDistance(pos, posList, walls, agent):
     minDist = 9999
     action = Directions.STOP
+    goal = pos
     # print(walls)
     for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
         x, y = pos
@@ -773,11 +775,11 @@ def minDistance(pos, posList, walls, agent):
                 if dist < minDist:
                     # print("[minDistance]current dist",dist)
                     # print("[minDistance]current goal",target)
-                    # goal = target
+                    goal = target
                     minDist = dist
                     action = direction
     # print("[minDistance]target food:", goal)
-    return action
+    return (action, goal)
 
 
 def minDistanceToFarthestFood(pos, posList, walls, agent):
@@ -807,7 +809,8 @@ def minDistanceToFarthestFood(pos, posList, walls, agent):
 def minDistanceAvoidGhost(pos, posList, walls, agent, ghostList):
     minDist = 9999
     action = Directions.STOP
-    #fixme: annotate debug part
+    goal = pos
+    # fixme: annotate debug part
     # for i in walls.asList():
     #     agent.debugDraw(i,[1,1,0])
 
@@ -833,9 +836,10 @@ def minDistanceAvoidGhost(pos, posList, walls, agent, ghostList):
                 if dist < minDist:
                     # print("[minDistanceAvoidGhost]current dist",dist)
                     # print("[minDistanceAvoidGhost]current target",target)
+                    goal = target
                     minDist = dist
                     action = direction
-    return action
+    return (action, goal)
 
 
 def getFoodExceptDeadEnds(agent, gameState):
@@ -851,8 +855,8 @@ def eatCloseFood(agent, gameState, index):
     foodList = food.asList()
     pos = gameState.getAgentPosition(index)
     walls = getActualWalls(gameState, agent)
-    action = minDistance(pos, foodList, walls, agent)
-    return action
+    action, target = minDistance(pos, foodList, walls, agent)
+    return (action, target)
 
 
 def eatCloseFoodAvoidGhost(agent, gameState, index):
@@ -866,8 +870,8 @@ def eatCloseFoodAvoidGhost(agent, gameState, index):
     foodList = food.asList()
     pos = gameState.getAgentPosition(index)
     walls = getWallsWithEnemyAndBlock(gameState, agent, ghostList)
-    action = minDistanceAvoidGhost(pos, foodList, walls, agent, ghostList)
-    return action
+    action, target = minDistanceAvoidGhost(pos, foodList, walls, agent, ghostList)
+    return (action, target)
 
 
 def eatRandomFood(agent, gameState, index):
@@ -875,16 +879,16 @@ def eatRandomFood(agent, gameState, index):
     foodPos = agent.foodList[foodIndex]
     pos = gameState.getAgentPosition(index)
     walls = getActualWalls(gameState, agent)
-    action = minDistance(pos, [foodPos], walls, agent)
-    return action
+    action, target = minDistance(pos, [foodPos], walls, agent)
+    return (action, target)
 
 
 def eatFoodOutsideDeadEnd(agent, gameState, index):
     foodList = getFoodExceptDeadEnds(agent, gameState)
     pos = gameState.getAgentPosition(index)
     walls = getWallsWithDeadEnd(gameState, agent)
-    action = minDistance(pos, foodList, walls, agent)
-    return action
+    action, target = minDistance(pos, foodList, walls, agent)
+    return (action, target)
 
 
 def eatCapsule(agent, gameState, index):
@@ -897,8 +901,8 @@ def eatCapsule(agent, gameState, index):
     capsuleList = agent.capsules
     pos = gameState.getAgentPosition(index)
     walls = getWallsWithEnemy(gameState, agent, ghostList)
-    action = minDistanceAvoidGhost(pos, capsuleList, walls, agent)
-    return action
+    action, target = minDistanceAvoidGhost(pos, capsuleList, walls, agent)
+    return action, target
 
 
 def eatFoodAvoidCapsule(agent, gameState, index):
@@ -906,8 +910,8 @@ def eatFoodAvoidCapsule(agent, gameState, index):
     foodList = food.asList()
     pos = gameState.getAgentPosition(index)
     walls = getWallsWithCapsules(gameState, agent)
-    action = minDistance(pos, foodList, walls, agent)
-    return action
+    action, target = minDistance(pos, foodList, walls, agent)
+    return action, target
 
 
 # reach the top middleLine position
@@ -916,16 +920,16 @@ def reachSpecificEnemyMidPos(agent, gameState, index):
     topMidPos = [middleList[0]]
     pos = gameState.getAgentPosition(index)
     walls = getActualWalls(gameState, agent)
-    action = minDistance(pos, topMidPos, walls, agent)
-    return action
+    action, target = minDistance(pos, topMidPos, walls, agent)
+    return action, target
 
 
 def reachOwnMidList(agent, gameState, index):
     middleList = agent.midLine
     pos = gameState.getAgentPosition(index)
     walls = getActualWalls(gameState, agent)
-    action = minDistance(pos, middleList, walls, agent)
-    return action
+    action,target = minDistance(pos, middleList, walls, agent)
+    return action, target
 
 
 # used when escape & eatSafeFood return nothing
@@ -939,16 +943,16 @@ def reachOwnMidWithEnemyInsight(agent, gameState, index):
     middleList = agent.midLine
     pos = gameState.getAgentPosition(index)
     walls = getWallsWithEnemyAndDeadEnd(gameState, agent, ghostList)
-    action = minDistanceAvoidGhost(pos, middleList, walls, agent, ghostList)
-    return action
+    action, target = minDistanceAvoidGhost(pos, middleList, walls, agent, ghostList)
+    return action, target
 
 
 def reachEnemyMidList(agent, gameState, index):
     enemyMiddleList = agent.enemyMidLine
     pos = gameState.getAgentPosition(index)
     walls = getActualWalls(gameState, agent)
-    action = minDistance(pos, enemyMiddleList, walls, agent)
-    return action
+    action, target = minDistance(pos, enemyMiddleList, walls, agent)
+    return action, target
 
 
 def eatFoodClosestToMidList(agent, gameState, index):
@@ -965,8 +969,8 @@ def eatFoodClosestToMidList(agent, gameState, index):
                 if dist < minDist:
                     minDist = dist
                     minDistFoodPos = target
-    action = minDistance(pos, [minDistFoodPos], walls, agent)
-    return action
+    action, target = minDistance(pos, [minDistFoodPos], walls, agent)
+    return action, target
 
 
 def eatClosestGhost(agent, gameState, index):
@@ -978,8 +982,8 @@ def eatClosestGhost(agent, gameState, index):
             ghostList.append(enemyPos)
     pos = gameState.getAgentPosition(index)
     walls = getWallsWithDeadEnd(gameState, agent)
-    action = minDistance(pos, ghostList, walls, agent)
-    return action
+    action, target = minDistance(pos, ghostList, walls, agent)
+    return action, target
 
 
 def eatClosestEnemyPacman(agent, gameState, index):
@@ -996,8 +1000,8 @@ def eatClosestEnemyPacman(agent, gameState, index):
                     enemyList.append(enemyPos)
     pos = gameState.getAgentPosition(index)
     walls = getActualWalls(gameState, agent)
-    action = minDistance(pos, enemyList, walls, agent)
-    return action
+    action, target = minDistance(pos, enemyList, walls, agent)
+    return action, target
 
 
 def eatFarthestFoodFromGhost(agent, gameState, index):
@@ -1007,8 +1011,8 @@ def eatFarthestFoodFromGhost(agent, gameState, index):
     # enemyPosList = [gameState.getAgentPosition()]
     # pos = gameState.getAgentPosition(index)
     # walls = getWallsWithDeadEnd(gameState, agent)
-    # action = minDistance(pos, foodList, walls, agent)
-    # return action
+    # action, target = minDistance(pos, foodList, walls, agent)
+    # return action, target
 
 
 def foolGhost(agent, gameState, index):
@@ -1020,8 +1024,8 @@ def foolGhost(agent, gameState, index):
             ghostList.append(enemyPos)
     pos = gameState.getAgentPosition(index)
     walls = getWallsWithDeadEnd(gameState, agent)
-    action = minDistance(pos, ghostList, walls, agent)
-    return action
+    action, target = minDistance(pos, ghostList, walls, agent)
+    return action, target
 
 
 # used when in stalemate
