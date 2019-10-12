@@ -393,6 +393,8 @@ class AttackAgent(CaptureAgent):
             minPos = None
             for food in curFoods:
                 for pos in enemyPos:
+                    print('@@@', pos)
+
                     dis = self.distancer.getDistance(food, pos)
                     if dis < minDis:
                         minDis = dis
