@@ -21,13 +21,16 @@ import random
 import getEnemyPosition
 import time
 import util
+import gameData
 #################
 # Team creation #
 #################
 debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
+gameData = gameData.gamedata()
 deadEnemy = {}
-
+actionHistory = {}
+agentMod = {}
 
 def createTeam(firstIndex, secondIndex, isRed,
                first='AttackAgent', second='AttackAgent'):
@@ -142,6 +145,11 @@ class AttackAgent(CaptureAgent):
                     self.debugDraw(i, [self.deadEnd[i] / 100 + 0.3, 0, 0])
                 else:
                     self.debugDraw(i, [0, self.deadEnd[i] / 100 + 0.3, 0])
+        actionHistory[self.index] = []
+        agentMod[self.index] = []
+
+
+
 
     def getMiddleX(self, gameState):
         mapWidth = gameState.data.layout.width
@@ -482,14 +490,19 @@ class AttackAgent(CaptureAgent):
                 action = myProblem.minDistance(curPos,[closestMidPos],self.walls,self)
             else:
                 if self.carryFoods == 0:
-                    action = myProblem.minDistance(curPos,[foodFarFromEnemy],self.walls,self)
+                    action,target = myProblem.minDistance(curPos,[foodFarFromEnemy],self.walls,self)
+                    agentMod[self.index] = ("eatFood",target)
                 else:
-                    action = myProblem.eatCloseFood(self,gameState,self.index)
+                    action,target = myProblem.eatCloseFood(self,gameState,self.index)
+                    agentMod[self.index] = ("eatFood",target)
         else:
             walls = self.getNewWalls(self.enemyMidLine)
-            action = myProblem.minDistance(curPos, enemyPositionsToDefend, walls, self)
+            action,target = myProblem.minDistance(curPos, enemyPositionsToDefend, walls, self)
+            agentMod[self.index] = ("trace enemy",target)
         self.updateDeath(gameState, action)
         print(self.index,time.clock() - s)
+        actionHistory[self.index].append(action)
+        print(agentMod)
         return action
 
     def getNewWalls(self,newBlocking):
