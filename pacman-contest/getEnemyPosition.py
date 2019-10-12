@@ -107,6 +107,9 @@ class enemyPosition:
         for i in self.death:
             if self.death[i] >0:
                 self.death[i] += -1
+def getCapsulesRegion(gameState,capsules):
+    foodList = self.getFood().asList
+
 
 
 
