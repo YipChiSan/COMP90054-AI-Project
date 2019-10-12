@@ -3,7 +3,6 @@
         #  'getInitialAgentPosition', 'getLegalActions', 'getNumAgents', 'getRedCapsules', 'getRedFood', 'getRedTeamIndices',
         #  'getScore', 'getWalls', 'hasFood', 'hasWall', 'initialize', 'isOnRedTeam', 'isOver', 'isRed', 'makeObservation',
         #  'redTeam', 'teams']
-import myTeam
 debug = False
 
 class enemyPosition:
