@@ -704,12 +704,12 @@ class EatOneEscapeProblem:
 
 
 def getActualWalls(gameState, agent):
-    walls = agent.walls
+    walls = copy.deepcopy(agent.walls)
     return walls
 
 
 def getWallsWithDeadEnd(gameState, agent):
-    walls = agent.walls
+    walls = copy.deepcopy(agent.walls)
     deadEnds = agent.deadEnd
     for pos in deadEnds:  # x y of deadEnd is reversed
         walls[pos[0]][pos[1]] = True
@@ -717,7 +717,7 @@ def getWallsWithDeadEnd(gameState, agent):
 
 
 def getWallsWithCapsules(gameState, agent):
-    walls = agent.walls
+    walls = copy.deepcopy(agent.walls)
     capsules = agent.capsules
     for pos in capsules:  # x y of deadEnd is reversed
         walls[pos[0]][pos[1]] = True
@@ -725,8 +725,27 @@ def getWallsWithCapsules(gameState, agent):
 
 
 def getWallsWithEnemy(gameState, agent, ghostList):
-    walls = agent.walls
+    walls = copy.deepcopy(agent.walls)
     for pos in ghostList:  # x y of deadEnd is reversed
+        walls[pos[0]][pos[1]] = True
+    return walls
+
+def getWallsWithEnemyAndDeadEnd(gameState, agent, ghostList):
+    walls = copy.deepcopy(agent.walls)
+    for pos in ghostList:  # x y of deadEnd is reversed
+        walls[pos[0]][pos[1]] = True
+    deadEnds = agent.deadEnd
+    for pos in deadEnds:  # x y of deadEnd is reversed
+        walls[pos[0]][pos[1]] = True
+    return walls
+
+
+def getWallsWithEnemyAndBlock(gameState, agent, ghostList):
+    walls = copy.deepcopy(agent.walls)
+    for pos in ghostList:  # x y of deadEnd is reversed
+        walls[pos[0]][pos[1]] = True
+    blocks = agent.block
+    for pos in blocks:  # x y of deadEnd is reversed
         walls[pos[0]][pos[1]] = True
     return walls
 
@@ -788,6 +807,10 @@ def minDistanceToFarthestFood(pos, posList, walls, agent):
 def minDistanceAvoidGhost(pos, posList, walls, agent, ghostList):
     minDist = 9999
     action = Directions.STOP
+    #fixme: annotate debug part
+    # for i in walls.asList():
+    #     agent.debugDraw(i,[1,1,0])
+
     # print("[minDistanceAvoidGhost] curPos", pos)
     for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
         x, y = pos
@@ -842,7 +865,7 @@ def eatCloseFoodAvoidGhost(agent, gameState, index):
     food = agent.foodGrid
     foodList = food.asList()
     pos = gameState.getAgentPosition(index)
-    walls = getWallsWithEnemy(gameState, agent, ghostList)
+    walls = getWallsWithEnemyAndBlock(gameState, agent, ghostList)
     action = minDistanceAvoidGhost(pos, foodList, walls, agent, ghostList)
     return action
 
@@ -915,7 +938,7 @@ def reachOwnMidWithEnemyInsight(agent, gameState, index):
             ghostList.append(enemyPos)
     middleList = agent.midLine
     pos = gameState.getAgentPosition(index)
-    walls = getWallsWithEnemy(gameState, agent, ghostList)
+    walls = getWallsWithEnemyAndDeadEnd(gameState, agent, ghostList)
     action = minDistanceAvoidGhost(pos, middleList, walls, agent, ghostList)
     return action
 

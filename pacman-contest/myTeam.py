@@ -351,19 +351,18 @@ class AttackAgent(CaptureAgent):
             if len(self.capsuleBeenEaten(gameState)) != 0:
                 enemyPosition.updateWithEatenFood(list(self.capsuleBeenEaten(gameState))[0])
             a = enemyPosition.enemyPosition
-            if debug:
-                self.debugClear()
-                for i in a[1]:
-                    self.debugDraw(i, [0, .3, .9])
-                # for i in enemyPosition.validPosition:
-                #   self.debugDraw(i,[0,0,1])
-                for i in a[3]:
-                    self.debugDraw(i, [.1, .75, .7])
             return a
         return {}
 
 
-
+            # if debug:
+            #     self.debugClear()
+            #     for i in a[1]:
+            #         self.debugDraw(i, [0, .3, .9])
+            #     # for i in enemyPosition.validPosition:
+            #     #   self.debugDraw(i,[0,0,1])
+            #     for i in a[3]:
+            #         self.debugDraw(i, [.1, .75, .7])
 
     def updateDeath(self, gameState, action):
         enemyDeath = self.eatEnemy1(gameState, action)
@@ -558,7 +557,7 @@ class AttackAgent(CaptureAgent):
                         print("eatClosestEnemyPacman", action)
                 elif len(ghostEnemy) > 0:
                     if curPos[0] < self.midX:
-                        #todo: defense？
+                        #todo: 需要改
                         action = myProblem.reachOwnMidList(self, gameState, self.index)
                         if debug:
                             print("reachOwnMidList2", action)
