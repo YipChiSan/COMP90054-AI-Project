@@ -30,7 +30,7 @@ import getEnemyPosition
 #################
 # Team creation #
 #################
-debug = True
+debug = False
 # debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 deadEnemy = {}
