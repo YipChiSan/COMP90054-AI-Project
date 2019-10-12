@@ -21,13 +21,15 @@ import random
 import getEnemyPosition
 import time
 import util
+import collections
 #################
 # Team creation #
 #################
-debug = True
+debug = False
 enemyPosition = getEnemyPosition.enemyPosition()
 deadEnemy = {}
-
+teammateState = {}
+enemyCarryFoodNumber = collections.defaultdict(float)
 
 def createTeam(firstIndex, secondIndex, isRed,
                first='AttackAgent', second='AttackAgent'):
@@ -123,6 +125,7 @@ class AttackAgent(CaptureAgent):
         self.allienIndex = (self.index + 2) % 4
         self.lastAction = None
         self.manhattanSight = self.getManhattanSight()
+        teammateState[self.index] = gameState
         if self.red:
             self.enemyIndex = [1, 3]
             deadEnemy[1] = 0
@@ -313,7 +316,7 @@ class AttackAgent(CaptureAgent):
     def foodBeenEaten(self, gameState):
         if gameState.data.timeleft < 1190:
             curFoods = self.getFoodYouAreDefending(gameState).asList()
-            preFoods = self.getFoodYouAreDefending(self.getPreviousObservation()).asList()
+            preFoods = self.getFoodYouAreDefending(teammateState[self.allienIndex]).asList()
         else:
             return set()
         return set(preFoods) - set(curFoods)
@@ -424,13 +427,45 @@ class AttackAgent(CaptureAgent):
         return v
 
     def getEnemySight(self, enemyPosition):
-        sight = []
+        sight = collections.defaultdict(int)
         for enemyX, enemyY in enemyPosition:
-            tmp = []
-            for sightX ,sightY in self.manhattanSight:
-                tmp.append((enemyX + sightX, enemyY + sightY))
-            sight.append(tmp)
+            for sightX, sightY in self.manhattanSight:
+                s = (enemyX + sightX, enemyY + sightY)
+                sight[s] += 1
         return sight
+
+    def scoreChanged(self, gameState):
+        myCurScore = 0
+        teammateNextMoveScore = 0
+        if gameState.data.timeleft < 1190:
+            myCurScore = gameState.data.score
+            teammateNextMoveScore = teammateState[self.allienIndex].data.score
+        scoreChange = myCurScore - teammateNextMoveScore
+        return scoreChange
+
+    def getEnemyCarryFoodNumber(self, gameState, enemyPosition):
+        enemyKeys = list(enemyPosition.keys())
+        foodBeenEaten = list(self.foodBeenEaten(gameState))
+        if len(foodBeenEaten) != 0:
+            food = foodBeenEaten[0]
+            if food in enemyPosition[enemyKeys[0]] and food not in enemyPosition[enemyKeys[1]]:
+                enemyCarryFoodNumber[enemyKeys[0]] += 1
+            elif food in enemyPosition[enemyKeys[1]] and food not in enemyPosition[enemyKeys[0]]:
+                enemyCarryFoodNumber[enemyKeys[1]] += 1
+            elif food in enemyPosition[enemyKeys[0]] and food in enemyPosition[enemyKeys[1]]:
+                enemyCarryFoodNumber[enemyKeys[1]] += 0.5
+        scoreChanged = self.scoreChanged(gameState)
+        if scoreChanged:
+            for pos in enemyPosition[enemyKeys[0]]:
+                if pos in self.enemyMidLine:
+                    enemyCarryFoodNumber[enemyKeys[0]] = 0
+            for pos in enemyPosition[enemyKeys[1]]:
+                if pos in self.enemyMidLine:
+                    enemyCarryFoodNumber[enemyKeys[1]] = 0
+        if deadEnemy[enemyKeys[0]]:
+            enemyCarryFoodNumber[enemyKeys[0]] = 0
+        if deadEnemy[enemyKeys[1]]:
+            enemyCarryFoodNumber[enemyKeys[1]] = 0
 
     def getClostestMidDistance(self,curPos,gameState):
         minDist = 999
@@ -470,10 +505,20 @@ class AttackAgent(CaptureAgent):
         # ghostEnemy = self.ghostEnemy(enemyPos)
         # pacmanEnemy = self.pacmanEnemy(enemyPos)
         enemyPositionsToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
-        enemySight = self.getEnemySight(enemyPositionsToDefend) # [ [(),(),()...], [(),(),(),...] ]
+
+        posibblePos = set()
+        for i in list((enemyPosition.enemyPosition).values()):
+            for j in i:
+                if j not in posibblePos:
+                    posibblePos.add(j)
+        enemySight = self.getEnemySight(list(posibblePos)) # [ [(),(),()...], [(),(),(),...] ]
         if debug:
             for i in enemySight:
-                self.debugDraw(i, [122,122,122])
+                self.debugDraw(i, [enemySight[i]/70+0.2,.2,.2])
+
+        self.getEnemyCarryFoodNumber(gameState, enemyPosition.enemyPosition)
+        print(enemyCarryFoodNumber)
+
         if self.index == 0:
             foodFarFromEnemy = self.getFoodFarFromEnemy(gameState, curPos, enemyPositionsToDefend)
             distToFood = self.distancer.getDistance(foodFarFromEnemy,curPos)
@@ -490,6 +535,7 @@ class AttackAgent(CaptureAgent):
             action = myProblem.minDistance(curPos, enemyPositionsToDefend, walls, self)
         self.updateDeath(gameState, action)
         print(self.index,time.clock() - s)
+        teammateState[self.index] = gameState.generateSuccessor(self.index,action)
         return action
 
     def getNewWalls(self,newBlocking):
