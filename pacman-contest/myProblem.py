@@ -12,7 +12,7 @@ class EatOneProblem:
         self.targetFoodNum = 1  # TODO: change
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -92,7 +92,7 @@ class EatWithDeadEndProblem:  # default: eat one
         self.targetFoodNum = 1
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.deadEnds = agent.deadEnd
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
@@ -147,7 +147,7 @@ class EatCapsuleProblem:
     def __init__(self, gameState, agent):
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -190,7 +190,7 @@ class ReachMiddleListProblem:
     def __init__(self, gameState, agent):
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -227,7 +227,7 @@ class BackToMiddleListProblem:
     def __init__(self, gameState, agent):
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -275,8 +275,8 @@ class EscapeProblem:
         self.index = agent.index
         self.pacmanPos = gameState.getAgentPosition(self.index)
         self.deadEnds = agent.deadEnd
-        self.walls = gameState.getWalls() + self.deadEnds  # add deadEnd points to walls
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy() + self.deadEnds  # add deadEnd points to walls
+        # self.walls = gameState.getWalls()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -355,7 +355,7 @@ class EatOneSafeFoodProblem:
         self.agent = agent
         self.pacmanPos = gameState.getAgentPosition(self.index)
         self.deadEnds = agent.deadEnd
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         # for i in self.deadEnds:
         #  self.walls[i[1]][i[0]] = True
         # add deadEnd points to walls
@@ -494,7 +494,7 @@ class EatCapsuleProblem:
         self.agent = agent
         self.pacmanPos = gameState.getAgentPosition(self.index)
         self.capsules = agent.capsules
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         # self.deadEnds = agent.deadEnd
         # self.foods = copy.deepcopy(agent.foodGrid)
         # self.foodList = self.foods.asList()
@@ -612,7 +612,7 @@ class EscapeProblem1:
         self.agent = agent
         self.pacmanPos = gameState.getAgentPosition(self.index)
         self.deadEnds = agent.deadEnd
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -717,7 +717,7 @@ class EatOneEscapeProblem:
         self.agent = agent
         self.pacmanPos = gameState.getAgentPosition(self.index)
         self.deadEnds = agent.deadEnd
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         # for i in self.deadEnds:
         #  self.walls[i[1]][i[0]] = True
         # add deadEnd points to walls

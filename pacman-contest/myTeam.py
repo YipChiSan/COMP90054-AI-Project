@@ -59,62 +59,12 @@ def createTeam(firstIndex, secondIndex, isRed,
 # Agents #
 ##########
 
-def getMapMatrix(gameState):
-    """
-    Start counting from the top-left corner
-
-    0 1 2 ➡
-    1
-    2
-    ⬇
-
-    0: Walls
-    1: Available movements
-    2: RedFood
-    3: RedCapsule
-    4: BlueFood
-    5: BlueCapsule
-    """
-    mapMatrix = gameState.deepCopy().data.layout.layoutText
-    mapHeight = len(mapMatrix)
-    for i in range(mapHeight):
-        mapMatrix[i] = mapMatrix[i].replace('%', '0')
-        mapMatrix[i] = mapMatrix[i].replace(' ', '1')
-        mapMatrix[i] = mapMatrix[i].replace('.', '1')
-        mapMatrix[i] = mapMatrix[i].replace('o', '1')
-        mapMatrix[i] = mapMatrix[i].replace('1', '1')
-        mapMatrix[i] = mapMatrix[i].replace('2', '1')
-        mapMatrix[i] = mapMatrix[i].replace('3', '1')
-        mapMatrix[i] = mapMatrix[i].replace('4', '1')
-        mapMatrix[i] = list(mapMatrix[i])
-        mapMatrix[i] = list(map(float, mapMatrix[i]))
-    for redFood in gameState.getRedFood().asList():
-        x = redFood[0]
-        y = mapHeight - 1 - redFood[1]
-        mapMatrix[y][x] = 2.0
-    for redCapsule in gameState.getRedCapsules():
-        if not redCapsule:
-            continue
-        x = redCapsule[0]
-        y = mapHeight - 1 - redCapsule[1]
-        mapMatrix[y][x] = 3.0
-    for blueFood in gameState.getBlueFood().asList():
-        x = blueFood[0]
-        y = mapHeight - 1 - blueFood[1]
-        mapMatrix[y][x] = 4.0
-    for blueCapsule in gameState.getBlueCapsules():
-        if not blueCapsule:
-            continue
-        x = blueCapsule[0]
-        y = mapHeight - 1 - blueCapsule[1]
-        mapMatrix[y][x] = 5.0
-    return mapMatrix
 
 class AttackAgent(CaptureAgent):
     def registerInitialState(self, gameState):
         CaptureAgent.registerInitialState(self, gameState)  # must be put ahead to set value of self.red
         self.walls = gameState.getWalls()
-        self.mapMatrix = getMapMatrix(gameState)
+        self.mapMatrix = self.getMapMatrix(gameState)
         self.midX = self.getMiddleX(gameState)
         self.enemyMidX = self.getEnemyMiddleX(gameState)
         if self.red:
@@ -144,14 +94,65 @@ class AttackAgent(CaptureAgent):
             deadEnemy[0] = 0
             deadEnemy[2] = 0
         enemyPosition.initial(gameState, self.red, self.mapMatrix)
-        if debug:
-            for i in self.deadEnd:
-                # x = i[1]
-                # y = len(self.mapMatrix) - i[0] -1
-                if i[0] in self.ourRegionX:
-                    self.debugDraw(i, [self.deadEnd[i] / 100 + 0.3, 0, 0])
-                else:
-                    self.debugDraw(i, [0, self.deadEnd[i] / 100 + 0.3, 0])
+        # if debug:
+        #     for i in self.deadEnd:
+        #         # x = i[1]
+        #         # y = len(self.mapMatrix) - i[0] -1
+        #         if i[0] in self.ourRegionX:
+        #             self.debugDraw(i, [self.deadEnd[i] / 100 + 0.3, 0, 0])
+        #         else:
+        #             self.debugDraw(i, [0, self.deadEnd[i] / 100 + 0.3, 0])
+
+    def getMapMatrix(self, gameState):
+        """
+        Start counting from the top-left corner
+
+        0 1 2 ➡
+        1
+        2
+        ⬇
+
+        0: Walls
+        1: Available movements
+        2: RedFood
+        3: RedCapsule
+        4: BlueFood
+        5: BlueCapsule
+        """
+        mapMatrix = gameState.deepCopy().data.layout.layoutText
+        mapHeight = len(mapMatrix)
+        for i in range(mapHeight):
+            mapMatrix[i] = mapMatrix[i].replace('%', '0')
+            mapMatrix[i] = mapMatrix[i].replace(' ', '1')
+            mapMatrix[i] = mapMatrix[i].replace('.', '1')
+            mapMatrix[i] = mapMatrix[i].replace('o', '1')
+            mapMatrix[i] = mapMatrix[i].replace('1', '1')
+            mapMatrix[i] = mapMatrix[i].replace('2', '1')
+            mapMatrix[i] = mapMatrix[i].replace('3', '1')
+            mapMatrix[i] = mapMatrix[i].replace('4', '1')
+            mapMatrix[i] = list(mapMatrix[i])
+            mapMatrix[i] = list(map(float, mapMatrix[i]))
+        for redFood in gameState.getRedFood().asList():
+            x = redFood[0]
+            y = mapHeight - 1 - redFood[1]
+            mapMatrix[y][x] = 2.0
+        for redCapsule in gameState.getRedCapsules():
+            if not redCapsule:
+                continue
+            x = redCapsule[0]
+            y = mapHeight - 1 - redCapsule[1]
+            mapMatrix[y][x] = 3.0
+        for blueFood in gameState.getBlueFood().asList():
+            x = blueFood[0]
+            y = mapHeight - 1 - blueFood[1]
+            mapMatrix[y][x] = 4.0
+        for blueCapsule in gameState.getBlueCapsules():
+            if not blueCapsule:
+                continue
+            x = blueCapsule[0]
+            y = mapHeight - 1 - blueCapsule[1]
+            mapMatrix[y][x] = 5.0
+        return mapMatrix
 
     def getMiddleX(self, gameState):
         mapWidth = gameState.data.layout.width
@@ -260,13 +261,14 @@ class AttackAgent(CaptureAgent):
 
     def eatEnemy1(self, gameState, action):
         eatEnemy = {}
+        curPos = gameState.getAgentPosition(self.index)
         nextGameState = gameState.generateSuccessor(self.index, action)
         nextPos = nextGameState.getAgentPosition(self.index)
         for index in self.enemyIndex:
             curPosE = gameState.getAgentPosition(index)
             nextPosE = nextGameState.getAgentPosition(index)
             # if debug:
-                # print("Sel next pos:", nextPos, "Enemy Current", curPosE, "Enemy Next", nextPosE)
+            # print("Sel next pos:", nextPos, "Enemy Current", curPosE, "Enemy Next", nextPosE)
             if (gameState.getInitialAgentPosition(index) == nextPosE):
                 eatEnemy[index] = True
             else:
@@ -403,6 +405,8 @@ class AttackAgent(CaptureAgent):
 
     def chooseAction(self, gameState):
         if debug:
+            totalTime = time.clock()
+        if debug:
             print("index", self.index)
         for i in deadEnemy:
             if deadEnemy[i] > 0:
@@ -410,12 +414,12 @@ class AttackAgent(CaptureAgent):
         curPos = gameState.getAgentPosition(self.index)
         self.block = self.getBlockRegions(gameState)
         self.debugClear()
-        if debug:
-            for i in self.block:
-                if self.index <2:
-                    self.debugDraw(i, [1, 0, 0])
-                else:
-                    self.debugDraw(i,[0,1,0])
+        # if debug:
+        #     for i in self.block:
+        #         if self.index <2:
+        #             self.debugDraw(i, [1, 0, 0])
+        #         else:
+        #             self.debugDraw(i,[0,1,0])
         # if self.block != []:
         #     time.sleep(1)
 
@@ -461,7 +465,9 @@ class AttackAgent(CaptureAgent):
             if numOfFoodLeft <= 2:
                 action, target = myProblem.reachOwnMidList(self, gameState, self.index)
                 self.lastAction = action
-                # self.updateDeath(gameState, action)
+                self.updateDeath(gameState, action)
+                if debug:
+                    print("total time:", time.clock() - totalTime)
                 return action
             if enemyScaredTimer[0] > 0 and enemyPos[0] != None:
                 if enemyScaredTimer[1] > 0 and enemyPos[1] != None:
@@ -505,7 +511,9 @@ class AttackAgent(CaptureAgent):
                     action, target = myProblem.eatCloseFood(self, gameState, self.index)
             if timer != None:
                 self.lastAction = action
-                # self.updateDeath(gameState, action)
+                self.updateDeath(gameState, action)
+                if debug:
+                    print("total time:", time.clock() - totalTime)
                 return action
         #todo: scaredTimer > 0; agent in our own place as white ghost
 
@@ -555,14 +563,14 @@ class AttackAgent(CaptureAgent):
                         print("breakStalemate1", action)
                 # (curPos in midLine and no close enemy) or (curPos in enemy's side)
                 elif numOfFoodLeft > 2:
-                    if debug:
-                        self.debugClear()
-                        for i in self.foodList:
-                            self.debugDraw(i,[1,0,0])
+                    # if debug:
+                    #     self.debugClear()
+                    #     for i in self.foodList:
+                    #         self.debugDraw(i,[1,0,0])
 
                     # todo: need to complete situation that startState depth > 0
                     problem = myProblem.EatOneSafeFoodProblem(gameState, self)
-                    actions, target = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic)
+                    actions, target = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic, 0.8)
                     if actions == None or actions == "TIMEEXCEED":
                         if curPos in self.midLine:
                             action, target = myProblem.eatCloseFoodAvoidGhost(self, gameState, self.index)
@@ -592,7 +600,7 @@ class AttackAgent(CaptureAgent):
                         print("breakStalemate3", action)
                 else: # curPos in enemy's side
                     escapeProblem = myProblem.EscapeProblem1(gameState, self)
-                    actions, target = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)
+                    actions, target = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic, 0.8)
                     if actions == None or actions == "TIMEEXCEED":
                         action, target = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
                         if debug:
@@ -606,11 +614,13 @@ class AttackAgent(CaptureAgent):
                 if debug:
                     print("eatCloseFoodAvoidGhost5", action)
         self.lastAction = action
-        # self.updateDeath(gameState, action)
+        self.updateDeath(gameState, action)
+        if debug:
+            print("total time:", time.clock() - totalTime)
         return action
 
 
-    def aStarSearch(self, problem, gameState, heuristic):
+    def aStarSearch(self, problem, gameState, heuristic,timeLimit):
         start = time.clock()
         """Search the node that has the lowest combined cost and heuristic first."""
         # init
@@ -625,8 +635,7 @@ class AttackAgent(CaptureAgent):
 
         while not frontier.isEmpty():
             elapsed = (time.clock() - start)
-            # todo : if elapsed >= 0.8 return None
-            if elapsed >= 0.8:
+            if elapsed >= timeLimit:
                 if debug:
                     print("Time used:", elapsed)
                     print("time exceed")
