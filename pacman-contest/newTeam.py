@@ -26,6 +26,7 @@ import gameData
 #################
 # Team creation #
 #################
+# debug = True
 debug = False
 enemyPosition = getEnemyPosition.enemyPosition()
 gameData = gameData.gamedata()
@@ -137,9 +138,9 @@ class AttackAgent(CaptureAgent):
             self.enemyRegionX = range(0,self.midX)
             self.ourRegionX = range(self.midX,len(self.mapMatrix[0]))
         print(self.enemyRegionX,self.ourRegionX)
-        for x in self.ourRegionX:
-            for y in range(0,len(self.mapMatrix)):
-                self.debugDraw((x,y),[1,0,0])
+        # for x in self.ourRegionX:
+        #     for y in range(0,len(self.mapMatrix)):
+        #         self.debugDraw((x,y),[1,0,0])
         if self.red:
             self.enemyIndex = [1, 3]
             deadEnemy[1] = 0
@@ -373,14 +374,14 @@ class AttackAgent(CaptureAgent):
             if len(self.capsuleBeenEaten(gameState)) != 0:
                 enemyPosition.updateWithEatenFood(list(self.capsuleBeenEaten(gameState))[0])
             a = enemyPosition.enemyPosition
-            if debug:
-                self.debugClear()
-                for i in a[self.enemyIndex[0]]:
-                    self.debugDraw(i, [0, .3, .9])
-                # for i in enemyPosition.validPosition:
-                #   self.debugDraw(i,[0,0,1])
-                for i in a[self.enemyIndex[1]]:
-                    self.debugDraw(i, [.1, .75, .7])
+            # if debug:
+            #     self.debugClear()
+            #     for i in a[self.enemyIndex[0]]:
+            #         self.debugDraw(i, [0, .3, .9])
+            #     # for i in enemyPosition.validPosition:
+            #     #   self.debugDraw(i,[0,0,1])
+            #     for i in a[self.enemyIndex[1]]:
+            #         self.debugDraw(i, [.1, .75, .7])
 
     def getEnemyInRegion(self,gameState,enemyPosition):
         enemyInRegion = {}
@@ -733,7 +734,7 @@ class AttackAgent(CaptureAgent):
         print(closestMid)
         action,target = myProblem.minDistance(self.curPos, [closestMid], self.walls, self)
         agentMod[self.index] = ("go defence",target)
-        self.debugDraw(target,[0.8,0.4,0.2])
+        # self.debugDraw(target,[0.8,0.4,0.2])
         return action,target
 
     def aStarSearch(self, problem, gameState, heuristic):

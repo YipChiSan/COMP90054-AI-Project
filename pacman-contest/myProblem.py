@@ -12,7 +12,7 @@ class EatOneProblem:
         self.targetFoodNum = 1  # TODO: change
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -92,7 +92,7 @@ class EatWithDeadEndProblem:  # default: eat one
         self.targetFoodNum = 1
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.deadEnds = agent.deadEnd
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
@@ -147,7 +147,7 @@ class EatCapsuleProblem:
     def __init__(self, gameState, agent):
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -190,7 +190,7 @@ class ReachMiddleListProblem:
     def __init__(self, gameState, agent):
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -227,7 +227,7 @@ class BackToMiddleListProblem:
     def __init__(self, gameState, agent):
         self.agent = agent
         self.index = agent.index
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -275,8 +275,8 @@ class EscapeProblem:
         self.index = agent.index
         self.pacmanPos = gameState.getAgentPosition(self.index)
         self.deadEnds = agent.deadEnd
-        self.walls = gameState.getWalls() + self.deadEnds  # add deadEnd points to walls
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy() + self.deadEnds  # add deadEnd points to walls
+        # self.walls = gameState.getWalls()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
@@ -355,7 +355,7 @@ class EatOneSafeFoodProblem:
         self.agent = agent
         self.pacmanPos = gameState.getAgentPosition(self.index)
         self.deadEnds = agent.deadEnd
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         # for i in self.deadEnds:
         #  self.walls[i[1]][i[0]] = True
         # add deadEnd points to walls
@@ -364,7 +364,7 @@ class EatOneSafeFoodProblem:
         self.middleLine = agent.midLine
         self.enemyMiddleLine = agent.enemyMidLine
         self.enemyIndices = agent.getOpponents(gameState)
-        self.foods = copy.deepcopy(agent.foodGrid)
+        self.foods = agent.foodGrid.deepCopy()
         self.foodList = self.foods.asList()
         self.enemyPositions = set()
         for idx in self.enemyIndices:
@@ -373,6 +373,7 @@ class EatOneSafeFoodProblem:
                 self.enemyPositions.add(enemyPos)
         self.enemyPositions = tuple(self.enemyPositions)
         self.startPos = gameState.getAgentPosition(self.index)
+        self.ownScaredTimer = gameState.data.agentStates[self.index].scaredTimer
         self.startDeadEndDepth = 0
         x, y = self.startPos
         if (x, y) in self.deadEnds:  # deadEnds store reversed x,y
@@ -409,7 +410,8 @@ class EatOneSafeFoodProblem:
                     #   self.storeExpandedForbidden(state[2]+1)
                     closeDist = 999
                     for enemy in newEnemyPositions:
-                        if not enemy is None:
+                        # enemy in our side / own agent is scared
+                        if (not enemy is None) and (enemy[0] in self.agent.ourRegionX or self.ownScaredTimer > 0):
                             dis = self.agent.distancer.getDistance((nextx, nexty), enemy)
                             closeDist = min(closeDist, dis)
                     # print("test for deadEnd",(nextx,nexty),self.deadEnds)
@@ -493,10 +495,10 @@ class EatCapsuleProblem:
         self.index = agent.index
         self.agent = agent
         self.pacmanPos = gameState.getAgentPosition(self.index)
-        self.capsules = agent.capsules
-        self.walls = gameState.getWalls()
+        self.capsules = tuple(agent.capsules)
+        self.walls = gameState.getWalls().deepCopy()
         # self.deadEnds = agent.deadEnd
-        # self.foods = copy.deepcopy(agent.foodGrid)
+        # self.foods = agent.foodGrid.deepCopy()
         # self.foodList = self.foods.asList()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
@@ -536,11 +538,12 @@ class EatCapsuleProblem:
                         if not enemy is None:
                             dis = self.agent.distancer.getDistance((nextx, nexty), enemy)
                             closeDist = min(closeDist, dis)
-                    nextCapsules = state[2].copy()
+                    nextCapsules = state[2]
                     if (nextx, nexty) in nextCapsules:
+                        nextCapsules = list(nextCapsules)
                         nextCapsules.remove((nextx, nexty))
                     successors.append(
-                        (((nextx, nexty), newEnemyPositions, nextCapsules, state[3] + 1), direction, 1))
+                        (((nextx, nexty), newEnemyPositions, tuple(nextCapsules), state[3] + 1), direction, 1))
         return successors
 
     def eatCapsuleHeuristic(self, state):
@@ -612,13 +615,13 @@ class EscapeProblem1:
         self.agent = agent
         self.pacmanPos = gameState.getAgentPosition(self.index)
         self.deadEnds = agent.deadEnd
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
         self.enemyMiddleLine = agent.enemyMidLine
         self.enemyIndices = agent.getOpponents(gameState)
-        self.foods = copy.deepcopy(agent.foodGrid)
+        self.foods = agent.foodGrid.deepCopy()
         self.foodList = self.foods.asList()
         self.enemyPositions = set()
         for idx in self.enemyIndices:
@@ -717,7 +720,7 @@ class EatOneEscapeProblem:
         self.agent = agent
         self.pacmanPos = gameState.getAgentPosition(self.index)
         self.deadEnds = agent.deadEnd
-        self.walls = gameState.getWalls()
+        self.walls = gameState.getWalls().deepCopy()
         # for i in self.deadEnds:
         #  self.walls[i[1]][i[0]] = True
         # add deadEnd points to walls
@@ -928,7 +931,7 @@ def getFoodExceptDeadEnds(agent, gameState):
 
 
 def eatCloseFood(agent, gameState, index):
-    food = agent.foodGrid
+    food = agent.foodGrid.deepCopy()
     foodList = food.asList()
     pos = gameState.getAgentPosition(index)
     walls = getActualWalls(gameState, agent)
@@ -947,7 +950,7 @@ def eatCloseFoodAvoidGhost(agent, gameState, index):
     ghostEnemy = agent.ghostEnemy(ghostList)
     addList = ghostEnemy + agent.block
 
-    food = agent.foodGrid
+    food = agent.foodGrid.deepCopy()
     foodList = food.asList()
     pos = gameState.getAgentPosition(index)
     walls = getWallsWithAdditionList(gameState, agent, addList)
