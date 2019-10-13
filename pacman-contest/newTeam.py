@@ -26,7 +26,7 @@ import gameData
 #################
 # Team creation #
 #################
-debug = True
+debug = False
 enemyPosition = getEnemyPosition.enemyPosition()
 gameData = gameData.gamedata()
 deadEnemy = {}
@@ -565,6 +565,28 @@ class AttackAgent(CaptureAgent):
                 enemy = index
         return enemy
 
+    def getFoodsAroundCapsules(self, gameState):
+        d = dict()
+        foodList = self.getFood(gameState).asList()
+        for capsule in self.capsules:
+            l = []
+            for food in foodList:
+                if self.distancer.getDistance(food, capsule) <= 20:
+                    l.append(food)
+            d[capsule] = l
+        return d
+
+    def getCapsuleScore(self, gameState):
+        foodList = self.getFood(gameState).asList()
+        d = collections.defaultdict(int)
+        deadEnd = self.deadEnd.keys()
+        for capsule in self.capsules:
+            for food in foodList:
+                if self.distancer.getDistance(food, capsule) <= 20:
+                    if food in deadEnd:
+                        d[capsule] += self.deadEnd[food]
+        return d
+
     def chooseAction(self, gameState):
         enemyIndices = self.getOpponents(gameState)
         enemyPos = []
@@ -616,6 +638,14 @@ class AttackAgent(CaptureAgent):
         self.updateEnemyDied()
         self.enemyPositionsToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
         enemySight = self.getEnemySight(enemyPosition.enemyPosition) # [ [(),(),()...], [(),(),(),...] ]
+        foodsAroundCapsules = self.getFoodsAroundCapsules(gameState)
+        capsuleScore = self.getCapsuleScore(gameState)
+
+        tmp = {}
+        for k in foodsAroundCapsules:
+            tmp[k] = len(foodsAroundCapsules[k])
+        print('@'*30+'20步内豆子数量：', tmp)
+        print('@'*30+'20步内豆子分数：', dict(capsuleScore))
         # if debug:
         #     for i in enemySight:
         #         self.debugDraw(i, [122,122,122])
