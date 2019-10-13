@@ -30,8 +30,8 @@ import getEnemyPosition
 #################
 # Team creation #
 #################
-# debug = False
-debug = True
+debug = False
+# debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 deadEnemy = {}
 
@@ -404,7 +404,6 @@ class AttackAgent(CaptureAgent):
     def chooseAction(self, gameState):
         if debug:
             print("index", self.index)
-            print("last action:", self.lastAction)
         for i in deadEnemy:
             if deadEnemy[i] > 0:
                 deadEnemy[i] += -1
@@ -540,15 +539,13 @@ class AttackAgent(CaptureAgent):
                         print("entering eatCloseFoodAvoidGhost2", action)
         else:
             # judge enemy is ghost or pacman
-            #todo: using pacmanEnemy and ghostEnemy to optimize logic
-            # 蓝色对应修改
             if len(pacmanEnemy) > 0 and self.getAgentIndexCloseToTarget(gameState, curPos, teammatePos, pacmanEnemy) == self.index:  # curPos close to pacmanEnemy
                 action, target = myProblem.eatClosestEnemyPacman(self, gameState, self.index)
                 if debug:
                     print("eatClosestEnemyPacman", action)
             elif len(ghostEnemy) > 0:
                 if curPos[0] in self.ourRegionX and curPos not in self.midLine:
-                    #todo: 需要改
+                    #todo: 需要改[可能从自己家绕]
                     action, target = myProblem.reachOwnMidList(self, gameState, self.index)
                     if debug:
                         print("reachOwnMidList2", action)
