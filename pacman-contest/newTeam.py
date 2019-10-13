@@ -35,6 +35,8 @@ teammateState = {}
 enemyCarryFoodNumber = collections.defaultdict(float)
 actionHistory = {}
 agentMod = {}
+positionHistory  ={}
+
 
 def createTeam(firstIndex, secondIndex, isRed,
                first='AttackAgent', second='AttackAgent'):
@@ -131,13 +133,14 @@ class AttackAgent(CaptureAgent):
         self.lastAction = None
         self.manhattanSight = self.getManhattanSight()
         teammateState[self.index] = gameState
+        positionHistory[self.index] = []
         if self.red:
             self.ourRegionX = range(0,self.midX + 1)
             self.enemyRegionX = range(self.midX + 1,len(self.mapMatrix[0]))
         else:
             self.enemyRegionX = range(0,self.midX)
             self.ourRegionX = range(self.midX,len(self.mapMatrix[0]))
-        print(self.enemyRegionX,self.ourRegionX)
+        # print(self.enemyRegionX,self.ourRegionX)
         # for x in self.ourRegionX:
         #     for y in range(0,len(self.mapMatrix)):
         #         self.debugDraw((x,y),[1,0,0])
@@ -165,10 +168,11 @@ class AttackAgent(CaptureAgent):
         #             self.debugDraw(i, [0, self.deadEnd[i] / 100 + 0.3, 0])
         actionHistory[self.index] = []
         agentMod[self.index] = []
-
-
-
-
+        # self.foodRegion = InitialMap.getFoodRegion(self,gameState)
+        # foodCluster = InitialMap.cluster1(gameState,self.getFood(gameState).asList()[0],self)
+        # for i in foodCluster:
+        #     self.debugDraw(i,[0.3,.4,.5])
+        # self.debugDraw(self.getFood(gameState).asList()[0],[0.9,0.6,0.1])
     def getMiddleX(self, gameState):
         mapWidth = gameState.data.layout.width
         if self.red:
@@ -184,6 +188,17 @@ class AttackAgent(CaptureAgent):
         else:
             enemyX = int((mapWidth - 2) / 2)
         return enemyX
+
+    # def inLoop(self):
+    #     loopCheck = [positionHistory[self.index][:-1]]
+    #     loopCheck2 = []
+    #     loopNum = 0
+    #     for i,pos in enumerate(reversed(positionHistory[self.index])[1:20]):
+    #         loopCheck2.append(pos)
+    #         if pos == loopCheck:
+    #             loopNum += 1
+    #             loopCheck = []
+
 
     def getMiddleLine(self, gameState):
         midLine = []
@@ -290,7 +305,7 @@ class AttackAgent(CaptureAgent):
             curPosE = gameState.getAgentPosition(index)
             nextPosE = nextGameState.getAgentPosition(index)
             # if debug:
-                # print("Sel next pos:", nextPos, "Enemy Current", curPosE, "Enemy Next", nextPosE)
+            # print("Sel next pos:", nextPos, "Enemy Current", curPosE, "Enemy Next", nextPosE)
             if (gameState.getInitialAgentPosition(index) == nextPosE):
                 eatEnemy[index] = True
             else:
@@ -395,7 +410,7 @@ class AttackAgent(CaptureAgent):
                     enemyInRegion[index][1] +=1
             total = enemyInRegion[index][0]+enemyInRegion[index][1]
             pro = enemyInRegion[index][0]/total
-            print(enemyInRegion[index][0],enemyInRegion[index][1])
+            # print(enemyInRegion[index][0],enemyInRegion[index][1])
             if pro>0.8:
                 enemy[index] = "Our"
             else:
@@ -448,22 +463,25 @@ class AttackAgent(CaptureAgent):
         return enemyPositionDict
 
     def getFoodFarFromEnemy(self, gameState, curPos, enemyPositionToDefend):
-        curFoods = self.getFood(gameState).asList()
+        curFoods = self.foodGrid.asList()
         minDis = 999999
         minPos = None
         enemyList = []
         for i in enemyPositionToDefend:
             enemyList.append(enemyPositionToDefend[i])
-        print(enemyList)
+        for i in enemyList:
+            # print("enemyList",enemyList)
+            self.debugDraw(i,[0,0.8,.4])
         for i in curFoods:
             distanceToFood = self.distancer.getDistance(curPos, i)
             distanceToGhost = min(map(lambda x: self.distancer.getDistance(x, curPos), enemyList))
             dis = distanceToFood - distanceToGhost
+            print(dis)
             if dis < minDis:
                 minDis = dis
                 minPos = i
-        # if debug:
-        #     self.debugDraw(minPos, [.98,.41,.07]) if minPos else None
+        if debug:
+            self.debugDraw(minPos, [.98,.41,.07]) if minPos else None
         return minPos
 
     def getManhattanSight(self):
@@ -477,12 +495,13 @@ class AttackAgent(CaptureAgent):
     def getEnemySight(self, enemyPosition):
         sights = {}
         sight = collections.defaultdict(int)
-        print("enemy Position",enemyPosition)
+        # print("enemy Position",enemyPosition)
         for index in self.enemyIndex:
             for enemyX, enemyY in enemyPosition[index]:
                 for sightX, sightY in self.manhattanSight:
                     s = (enemyX + sightX, enemyY + sightY)
-                    sight[s] += 1
+                    if s[0] in range(0,len(self.mapMatrix[0])+1) and s[1] in range(0,len(self.mapMatrix)+1):
+                        sight[s] += 1
             sights[index] = sight
         return sights
 
@@ -566,7 +585,46 @@ class AttackAgent(CaptureAgent):
                 enemy = index
         return enemy
 
+    def getClosedFood(self,gameState,teammateTarget):
+        minDist = 999
+        foods = self.getFood(gameState).asList()
+        food = foods[0]
+        foods = list(set(foods) - set(teammateTarget))
+        for i in foods:
+            dist = self.distancer.getDistance(i,self.curPos)
+            if dist < minDist:
+                food = i
+                minDist = dist
+        return food
+
+    def getTeammateTargetRegion(self,gameState):
+        foodCluster = []
+        if agentMod[self.allienIndex] != []:
+            if agentMod[self.allienIndex][0] == "eatFood":
+                foodCluster = InitialMap.cluster1(gameState,agentMod[self.allienIndex][1],self)
+                # self.debugClear()
+                # for i in foodCluster:
+                #     self.debugDraw(i,[0.3,self.index / 4,.5])
+                # self.debugDraw(agentMod[self.allienIndex][1],[0.9,0.6,0.1])
+        return foodCluster
+    # def getFoodOutsideSight(self,posSight):
+    def getEnemyInsightTogether(self,enemyInsight):
+        posInsight = {}
+        for i in enemyInsight:
+            for j in enemyInsight[i]:
+                if j in posInsight:
+                    posInsight[j] = posInsight[j] + enemyInsight[i][j]
+                else:
+                    posInsight[j] = enemyInsight[i][j]
+        return posInsight
+
     def chooseAction(self, gameState):
+        self.debugClear()
+        self.curPos = gameState.getAgentPosition(self.index)
+        teammateCluster = self.getTeammateTargetRegion(gameState)
+        closestFood = self.getClosedFood(gameState,teammateCluster)
+        # if self.index != 0 :
+        #     self.debugDraw(closestFood,[1,0,0.1])
         enemyIndices = self.getOpponents(gameState)
         enemyPos = []
         for idx in enemyIndices:
@@ -581,8 +639,8 @@ class AttackAgent(CaptureAgent):
             if deadEnemy[i] > 0:
                 deadEnemy[i] += -1
         curPos = gameState.getAgentPosition(self.index)
-        block = self.getBlockRegions(gameState)
-        self.debugClear()
+        self.block = self.getBlockRegions(gameState)
+        # self.debugClear()
         # if debug:
         #     for i in block:
         #         if self.index <2:
@@ -600,7 +658,7 @@ class AttackAgent(CaptureAgent):
         # print(self.enemyInRegion)
         # ghostEnemy = self.ghostEnemy(enemyPos)
         # pacmanEnemy = self.pacmanEnemy(enemyPos)
-        enemyPositionsToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
+        # enemyPositionsToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
 
         posibblePos = set()
         for i in list((enemyPosition.enemyPosition).values()):
@@ -611,45 +669,74 @@ class AttackAgent(CaptureAgent):
         # if debug:
         #     for i in enemySight:
         #         self.debugDraw(i, [enemySight[i]/70+0.2,.2,.2])
-
+        self.foodGrid = self.getFood(gameState)
         self.getEnemyCarryFoodNumber(gameState, enemyPosition.enemyPosition)
-        print(enemyCarryFoodNumber)
+        # print(enemyCarryFoodNumber)
         self.updateEnemyDied()
+        self.teammatePos = gameState.getAgentPosition(self.allienIndex)
+        self.curInDangerous = self.curInsightOfEnemy(self.curPos,enemyPos)
+        self.teammateInDangerous = self.curInsightOfEnemy(self.teammatePos,enemyPos)
         self.enemyPositionsToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
         enemySight = self.getEnemySight(enemyPosition.enemyPosition) # [ [(),(),()...], [(),(),(),...] ]
-        # if debug:
-        #     for i in enemySight:
-        #         self.debugDraw(i, [122,122,122])
+        # print(enemySight)
+        posInsight = self.getEnemyInsightTogether(enemySight)
+        foodCluster = self.getTeammateTargetRegion(gameState)
+        # print(self.getFood(gameState))
+        # for i in foodCluster:
+        #     self.debugDraw(i,[1,0,0])
+        self.removeFoodsForTeammate(foodCluster)
+        # print(self.foodGrid)
+         # print(self.foodGrid)
+        # self.debugClear()
+        # for i in self.foodGrid.asList():
+        #     if self.index == 2:
+        #         self.debugDraw(i,[1,0,1])
+        # print(posInsight)
+        # # self.debugClear()
+        # # if True: #debug
+        # #     for i in enemySight:
+        # #         for j in enemySight[i]:
+        # #             self.debugDraw(j, [122,122,122])
         self.enemyAllHome = self.getEnemyAllatHome()
+        # print(self.enemyDied,self.enemyDied[self.enemyIndex[0]] or self.enemyDied[self.enemyIndex[1]])
+        #(self.index == 0 or self.index == 2)
         if (self.index == 0 or self.index == 1) or (self.enemyAllHome and (self.enemyDied[self.enemyIndex[0]] or self.enemyDied[self.enemyIndex[1]])):
             foodFarFromEnemy = self.getFoodFarFromEnemy(gameState, curPos, self.enemyPositionsToDefend)
-            distToFood = self.distancer.getDistance(foodFarFromEnemy,curPos)
+            # self.debugDraw(foodFarFromEnemy,[1,0,0])
+            distToFood = 100
+            if foodFarFromEnemy:
+                distToFood = self.distancer.getDistance(foodFarFromEnemy,curPos)
             closestMidDist,closestMidPos = self.getClostestMidDistance(curPos,gameState)
-            if ((distToFood > closestMidDist + 4) and self.carryFoods > 0) or (len(self.getFood(gameState).asList()) <=2):
+            if ((closestMidDist < 5) and (distToFood > closestMidDist + 4) and self.carryFoods > 0) or (len(self.getFood(gameState).asList()) <=2) or (foodFarFromEnemy is None) and (self.curPos[0] in self.enemyRegionX):
+                # self.debugDraw(foodFarFromEnemy,[self.index/2,0,0])
                 if self.curInsightOfEnemy(curPos,enemyPos):
                     escapeProblem = myProblem.EscapeProblem1(gameState, self)
-                    actions = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)
-                    if actions == None or actions == "TIMEEXCEED":
+                    actions,target = self.aStarSearch(escapeProblem, gameState, escapeProblem.EscapeHeuristic)
+                    if actions == [] or actions == None or actions == "TIMEEXCEED":
                             # print("reachOwnMidWithEnemyInsight2")
                         action,target = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
+                        agentMod[self.index] = ("BackToMid",target)
                         if debug:
                             print("reachOwnMidWithEnemyInsight2", action)
                     else:
                         action = actions[0]
+                        agentMod[self.index] = ("BackToMid",target)
                 else:
                     action,target = myProblem.minDistance(curPos,[closestMidPos],self.walls,self)
                     agentMod[self.index] = ("BackToMid",target)
             else:
+                # self.debugDraw(foodFarFromEnemy,[self.index/2,self.index/2,0])
                 if self.curInsightOfEnemy(curPos,enemyPos):
                     self.block = self.getBlockRegions(gameState)
-                    safeFood = self.getSafeFood(gameState,block)
+                    safeFood = self.getSafeFood(gameState,self.block)
                     capsules = self.getCapsules(gameState)
                     safeFood = safeFood + capsules
                     if safeFood != []:
                         problem = myProblem.EatOneSafeFoodProblem(gameState,self)
-                        actions = self.aStarSearch(problem,gameState,problem.eatOneSafeHeuristic)
+                        actions,target = self.aStarSearch(problem,gameState,problem.eatOneSafeHeuristic)
                         if (not actions is None) and (actions[0] != "T"):
                             action = actions[0]
+                            agentMod[self.index] = ("eatFood",target)
                         else:
                             action,target = myProblem.eatCloseFood(self,gameState,self.index)
                             agentMod[self.index] = ("eatFood",target)
@@ -657,22 +744,30 @@ class AttackAgent(CaptureAgent):
                         action,target = myProblem.eatCloseFood(self,gameState,self.index)
                         agentMod[self.index] = ("eatFood",target)
                 else:
-                    if self.carryFoods == 0:
-                        action,target = myProblem.minDistance(curPos,[foodFarFromEnemy],self.walls,self)
-                        agentMod[self.index] = ("eatFood",target)
-                    else:
-                        action,target = myProblem.eatCloseFood(self,gameState,self.index)
-                        agentMod[self.index] = ("eatFood",target)
+                    # if self.carryFoods == 0:
+                        # problem = myProblem.EatOneFoodHiddenProblem(gameState,self,posInsight)
+                        # actions,target = self.aStarSearch(problem,gameState,problem.eatOneHeuristic)
+                        # action = actions[0]
+                        # self.debugDraw(target,[1,0,0])
+                    action,target = myProblem.minDistance(curPos,[foodFarFromEnemy],self.walls,self)
+                    agentMod[self.index] = ("eatFood",target)
+                    # else:
+                    #     action,target = myProblem.eatCloseFood(self,gameState,self.index)
+                    #     agentMod[self.index] = ("eatFood",target)
         else:
             if self.enemyAllHome:
+                # print(self.index,"I'm going to defend")
                 action,target = self.defence()
+                agentMod[self.index] = ("defend",target)
             else:
+                # print(self.index,"Trace")
                 enemyNeedToTrace = self.getEnemyNeedToTrace()
-                print(enemyNeedToTrace)
+                # print(enemyNeedToTrace)
                 action,target = self.trace(gameState,enemyNeedToTrace)
-        print(self.enemyDied,self.enemyAllHome)
+                agentMod[self.index] = ("defend",target)
+        # print(self.enemyDied,self.enemyAllHome)
         self.updateDeath(gameState, action)
-        print(self.index,time.clock() - s)
+        # print(self.index,time.clock() - s)
         teammateState[self.index] = gameState.generateSuccessor(self.index,action)
         # print(self.index,time.clock() - s)
         actionHistory[self.index].append(action)
@@ -685,6 +780,37 @@ class AttackAgent(CaptureAgent):
             walls[pos[0]][pos[1]] = True
             # self.debugDraw(pos,[1,0,0])
         return walls
+
+    def removeFoodsForTeammate(self,foodCluster):
+        for i in foodCluster:
+            dist1 = self.distancer.getDistance(i,self.curPos)
+            dist2 = self.distancer.getDistance(i,self.teammatePos)
+            # print(self.curPos,self.teammatePos,i,dist1,dist2)
+            if dist1 > dist2 - 5:
+                self.foodGrid[i[0]][i[1]] = False
+        # print(self.foodGrid)
+        # self.debugClear()
+        # for i in self.foodGrid.asList():
+        #     self.debugDraw(i,[self.index / 3,self.index / 3,1])
+        # for i in foodCluster:
+        #     self.debugDraw(i,[self.index / 3,self.index / 3,0])
+
+    def attack(self,gameState):
+        # if self.curInDangerous or self.teammateInDangerous:
+        #     eatCapsule ###自己或队友在危险中，自己能吃到capsule，自己离capsule比队友近，则去吃capsule，否则吃豆子
+        foodsList = self.getFood(gameState)
+        foodList = self.getSafeFood(foodsList,self.block)
+        foodCluster = self.getTeammateTargetRegion(gameState)
+        self.foodGrid = self.removeFoodsForTeammate(foodCluster)
+        walls = self.getNewWalls(self.block)
+        if foodList != []:
+            problem = myProblem.EatOneSafeFoodProblem(gameState,self)
+            action,target = myProblem.minDistance(self.curPos,foodList,walls,self)
+            agentMod[self.index] = ("eatFood",target)
+        else:
+            action,target = myProblem.reachOwnMidWithEnemyInsight()
+
+
 
     def trace(self,gameState,enemyIndex):
         enemyPos = self.enemyPositionsToDefend[enemyIndex]
@@ -701,11 +827,22 @@ class AttackAgent(CaptureAgent):
                 if dist < minDist:
                     minDist = dist
                     closestMid = pos
-        print(closestMid)
+        # print(closestMid)
         action,target = myProblem.minDistance(self.curPos, [closestMid], self.walls, self)
         agentMod[self.index] = ("go defence",target)
-        # self.debugDraw(target,[0.8,0.4,0.2])
+        self.debugDraw(target,[0.8,0.4,0.2])
         return action,target
+
+    # def defendFood(self,gameState):
+    #     ourFoods = self.getFoodYouAreDefending(gameState)
+    #     for food in ourFoods:
+    #         minDist =
+    #
+    # def losing(self,gameState):
+    #     if self.getFoodYouAreDefending(gameState) <= 2:
+
+
+
 
     def aStarSearch(self, problem, gameState, heuristic):
         start = time.clock()
@@ -727,7 +864,7 @@ class AttackAgent(CaptureAgent):
                 if debug:
                     print("Time used:", elapsed)
                     print("time exceed")
-                return "TIMEEXCEED"  # for eatOneSafeFood time exceed
+                return "TIMEEXCEED",None  # for eatOneSafeFood time exceed
             else:
                 current_node = frontier.pop()
                 if current_node[0] in best_g.keys():  # reopen
@@ -742,10 +879,11 @@ class AttackAgent(CaptureAgent):
                     best_g[current_node[0]] = current_node[2]
                     visited.add(current_node[0])
                     if problem.isGoalState(gameState, current_node[0]):
-                        return current_node[1]
+                        return current_node[1], current_node[0][0]
                     else:
                         for successor in problem.getSuccessors(current_node[0]):
                             cost_g = current_node[2] + successor[2]
                             priority = cost_g + heuristic(successor[0])
                             path = current_node[1] + [successor[1]]
                             frontier.push((successor[0], path, cost_g), priority)
+        return None,None

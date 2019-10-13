@@ -100,6 +100,76 @@ def moveEnd(map,x,y,deadEnd):
                 deadEnd = moveEnd(map,x+i[0],y+i[1],deadEnd)
     return deadEnd
 
+def getFoodRegion(agent,gameState):
+    meanDist = getFoodMeanDistance(agent,gameState)
+    foodList = agent.getFood(gameState).asList()
+    foodRegion = {}
+    # print("meanDist",meanDist)
+    foodInRegion = {}
+    for food in foodList:
+        foodRegion[food] = []
+        for food2 in foodList:
+            dist = agent.distancer.getDistance(food,food2)
+            if dist < 8:
+                foodInRegion[food2] = dist
+        FList = sorted(foodInRegion.values(),key=lambda item:item)
+        maxDist = FList[min(3,len(FList)-1)]
+        FList2 = sorted(foodInRegion.items(),key=lambda item:item[1])
+        for i in FList2:
+            if i[1] <= maxDist:
+                foodRegion[food].append(i[0])
+    # print("food Region",foodRegion)
+    return foodRegion
+
+def getFoodMeanDistance(agent,gameState):
+    foodList = agent.getFood(gameState).asList()
+    foodNumber = len(foodList)
+    foodDist = 0
+    for food in foodList:
+        minDist = 999
+        maxDist = 0
+        for food2 in foodList:
+            dist = agent.distancer.getDistance(food,food2)
+            if dist != 0 :
+                minDist = min(minDist,dist)
+                maxDist = max(maxDist,dist)
+        foodDist += (maxDist - minDist) / 2
+    foodDist = foodDist / foodNumber
+    return foodDist
+
+def cluster1(gameState,food,agent):
+    foodList = agent.getFood(gameState).asList()
+    foodNumber = len(foodList)
+    cluster = []
+    open = [food]
+    while (open != []) and len(cluster) < min(5,foodNumber / 2):
+        newOpen = []
+        for i in open:
+            for j in foodList:
+                dist = agent.distancer.getDistance(i,j)
+                if dist < 8:
+                    cluster.append(j)
+                    newOpen.append(j)
+        open = newOpen
+    return cluster
+
+
+def cluster(food,foodRegion,foodNumber):
+    foodCluster = []
+    region = copy.deepcopy(foodRegion[food])
+    while region != [] and (len(foodCluster) <= foodNumber/2):
+        newRegion = []
+        for food1 in region:
+            for food2 in foodRegion[food1]:
+                if not food2 in foodCluster:
+                    foodCluster.append(food2)
+                    newRegion.append(food2)
+        region = newRegion
+    # print("food Region",region)
+    return foodCluster
+
+
+
 
 
 # def searchDeadEnd(map):
