@@ -547,7 +547,6 @@ class EatCapsuleProblem:
         return successors
 
     def eatCapsuleHeuristic(self, state):
-        print("capsules:",state[2])
         curPos, enemy, capsules, step = state
         minDist = 9999
         for capsule in capsules:

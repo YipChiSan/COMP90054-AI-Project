@@ -599,13 +599,13 @@ class AttackAgent(CaptureAgent):
                     if insight and len(self.capsules) > 0:
                         problem = myProblem.EatCapsuleProblem(gameState, self)
                         actions, target = self.aStarSearch(problem, gameState, problem.eatCapsuleHeuristic, 0.2)
-                        if actions == [] and actions == None or actions == "TIMEEXCEED":
+                        if actions == [] or actions == None or actions == "TIMEEXCEED":
                             problem = myProblem.EatOneSafeFoodProblem(gameState, self)
                             actions, target = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic, 0.5)
-                            if actions == [] and actions == None or actions == "TIMEEXCEED":
+                            if actions == [] or actions == None or actions == "TIMEEXCEED":
                                 problem = myProblem.EscapeProblem1(gameState, self)
                                 actions, target = self.aStarSearch(problem, gameState, problem.EscapeHeuristic, 0.2)
-                                if actions == [] and actions == None or actions == "TIMEEXCEED":
+                                if actions == [] or actions == None or actions == "TIMEEXCEED":
                                     if curPos in self.midLine:
                                         action, target = myProblem.eatCloseFoodAvoidGhost(self, gameState, self.index)
                                     else:
