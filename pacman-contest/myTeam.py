@@ -550,7 +550,7 @@ class AttackAgent(CaptureAgent):
         return enemyAllOur
 
     def getEnemyNeedToTrace(self):
-        minDist = 9999
+        minDist = 999999
         for index in self.enemyIndex:
             if self.enemyInRegion[index] == "Our":
                 minDist = min(minDist,self.distancer.getDistance(self.enemyPositionsToDefend[index],self.curPos))
@@ -558,7 +558,7 @@ class AttackAgent(CaptureAgent):
         return enemy
 
     def getClosedFood(self,gameState,teammateTarget):
-        minDist = 999
+        minDist = 999999
         foods = self.getFood(gameState).asList()
         food = foods[0]
         foods = list(set(foods) - set(teammateTarget))
@@ -941,13 +941,31 @@ class AttackAgent(CaptureAgent):
                     mode = (action, ("defence", target))
             elif self.getEnemyOneAtHome():
                 enemyNeedToTrace = self.getEnemyNeedToTrace()
-                mode = self.trace(enemyNeedToTrace)
+                enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
+                if self.shouldITrace(enemyPos):
+                    mode = self.trace(enemyNeedToTrace)
+                else:
+                    return ()
             elif self.getEnemyAllAtOur():
                 enemyNeedToTrace = self.getEnemyNeedToTrace()
-                mode = self.trace(enemyNeedToTrace)
+                enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
+                if self.shouldITrace(enemyPos):
+                    mode = self.trace(enemyNeedToTrace)
+                else:
+                    return ()
         else:
             return ()
         return mode
+
+    def shouldITrace(self, enemyPos):
+        print('@@@@@@@@@@@@@@@',enemyPos)
+        if (self.curPos[0] in self.ourRegionX) and (self.teammatePos[0] in self.ourRegionX):
+            if self.distancer.getDistance(enemyPos, self.curPos) > self.distancer.getDistance(enemyPos, self.teammatePos):
+                return False
+            else:
+                return True
+        else:
+            return True
 
     def defence(self):
         minDist = 999999
