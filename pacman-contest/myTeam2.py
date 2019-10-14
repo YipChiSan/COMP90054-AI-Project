@@ -403,6 +403,25 @@ class AttackAgent(CaptureAgent):
                 close = close or (self.distancer.getDistance(curPos, enemy) <= 2)
         return close
 
+    def convertActionsToPath(self, startPos, actions):
+        x, y = startPos
+        pathList = []
+        for action in actions:
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            pathList.append((nextx, nexty))
+            x = nextx
+            y = nexty
+        return pathList
+
+    def pathToCloseFoodFromEnemy(self, gameState, enemyPos):
+        problem = myProblem.EnemyEatCloseFoodProblem(gameState, self, enemyPos)
+        actions, target = self.aStarSearch(problem, gameState, problem.EnemyEatCloseFoodHeuristic, 0.03)
+        pathList = self.convertActionsToPath(enemyPos, actions)
+        if actions == [] or actions == "TIMEEXCEED" or actions == None:
+            return []
+        return pathList
+
     def chooseAction(self, gameState):
         if debug:
             totalTime = time.clock()
