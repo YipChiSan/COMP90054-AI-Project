@@ -898,11 +898,13 @@ class AttackAgent(CaptureAgent):
         inThreeSteps = False
         for i in self.enemyPos:
             if not i is None:
-                inThreeSteps = inThreeSteps or self.distancer.getDistance(pos, i) <= 5
-        return self.curInsightOfEnemy(pos, self.enemyPos) and inThreeSteps and (pos[0] in self.enemyRegionX)
+                if i[0] in self.enemyRegionX or i in self.midLine:
+                    inThreeSteps = inThreeSteps or self.distancer.getDistance(pos, i) <= 5
+        beSeen = self.curInsightOfEnemy(pos, self.enemyPos)
+        return beSeen and inThreeSteps and (pos[0] in self.enemyRegionX or (pos in self.midLine))
 
     def inOurRegion(self):
-        if self.enemyAllHome and self.curPos[0] in self.ourRegionX:
+        if self.enemyAllHome and self.curPos[0] in self.ourRegionX and (not self.curPos in self.midLine):
             if self.foodGrid.asList() != []:
                 # print("enemyDIed!",self.enemyDied)
                 if (self.enemyDied[self.enemyIndex[0]] or self.enemyDied[self.enemyIndex[1]]):
@@ -925,15 +927,8 @@ class AttackAgent(CaptureAgent):
             return ()
         return mode
 
-            # l = []
-            # for i in self.enemyIndex:
-            #     if self.enemyInRegion[i] == 'Our':
-            #         l.append(self.enemyPositionsToDefend[i])
-            # action,target = myProblem.minDistance(self.curPos,l,self.walls,self)
-            # mode = (action, ("traceEnemy", target))
-
     def defence(self):
-        minDist = 999
+        minDist = 999999
         closestMid = random.choice(self.midLine)
         for pos in self.midLine:
             for index in self.enemyIndex:
