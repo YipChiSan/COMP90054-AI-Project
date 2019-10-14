@@ -832,7 +832,7 @@ def getWallsWithAdditionList(gameState, agent, additionList):
 
 
 # find shortest path, to any pos in posList
-def minDistance(pos, posList, walls, agent):
+def minDistance(pos, posList, walls, agent,secondList = []):
     minDist = 9999
     action = Directions.STOP
     goal = pos
@@ -852,6 +852,8 @@ def minDistance(pos, posList, walls, agent):
         if not (nextx, nexty) in wallsList:
             for target in posList:
                 dist = agent.distancer.getDistance((nextx, nexty), target)
+                # if secondList != []:
+
                 if dist < minDist:
                     # print("[minDistance]current dist",dist)
                     # print("[minDistance]current goal",target)
