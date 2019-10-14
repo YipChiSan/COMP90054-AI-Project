@@ -537,6 +537,18 @@ class AttackAgent(CaptureAgent):
             enemyAllHome = enemyAllHome & (self.enemyInRegion[enemy] != "Our")
         return enemyAllHome
 
+    def getEnemyOneAtHome(self):
+        enemyOneAtHome = False
+        for enemy in self.enemyInRegion:
+            enemyOneAtHome = enemyOneAtHome or (self.enemyInRegion[enemy] == "Our")
+        return enemyOneAtHome
+
+    def getEnemyAllAtOur(self):
+        enemyAllOur = True
+        for enemy in self.enemyInRegion:
+            enemyAllOur = enemyAllOur & (self.enemyInRegion[enemy] == "Our")
+        return enemyAllOur
+
     def getEnemyNeedToTrace(self):
         minDist = 9999
         for index in self.enemyIndex:
@@ -680,7 +692,7 @@ class AttackAgent(CaptureAgent):
         insight = self.curInsightOfEnemy(self.curPos, self.enemyPos)
         self.updateEnemyDied()
         ### BEGIN
-        mode = self.inOurRegion()
+        mode = self.inOurRegion(gameState)
         if mode != ():
             action, agentMod[self.index] = mode
         else:
@@ -903,26 +915,36 @@ class AttackAgent(CaptureAgent):
         beSeen = self.curInsightOfEnemy(pos, self.enemyPos)
         return beSeen and inThreeSteps and (pos[0] in self.enemyRegionX or (pos in self.midLine))
 
-    def inOurRegion(self):
-        if self.enemyAllHome and self.curPos[0] in self.ourRegionX and (not self.curPos in self.midLine):
-            if self.foodGrid.asList() != []:
-                # print("enemyDIed!",self.enemyDied)
-                if (self.enemyDied[self.enemyIndex[0]] or self.enemyDied[self.enemyIndex[1]]):
-                    foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
-                    action, target = myProblem.minDistance(self.curPos, [foodFarFromEnemy], self.walls, self)
-                    mode = (action, ("eatFood", target))
-                else:
-                    if (self.index == 0 or self.index == 1):
-                        foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
-                        action, target = myProblem.minDistance(self.curPos, [foodFarFromEnemy], self.walls, self)
-                        mode = (action, ("eatFood", target))
+    def inOurRegion(self, gameState):
+        if self.curPos[0] in self.ourRegionX:
+            if self.enemyAllHome:
+                if self.foodGrid.asList() != []:
+                    if (self.enemyDied[self.enemyIndex[0]] or self.enemyDied[self.enemyIndex[1]]) or (self.index == 0 or self.index == 1):
+                        if (not self.curPos in self.midLine) and (not self.curInDangerous):
+                            foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
+                            action, target = myProblem.minDistance(self.curPos, [foodFarFromEnemy], self.walls, self)
+                            mode = (action, ("eatFood", target))
+                        else:
+                            problem = myProblem.EatOneSafeFoodProblem(gameState, self)
+                            actions, target = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic, 0.4)
+                            if self.legalAction(actions):
+                                mode = (actions[0], ("eatFood", target))
+                            else:
+                                foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
+                                action, target = myProblem.minDistance(self.curPos, [foodFarFromEnemy], self.walls, self)
+                                mode = (action, ("eatFood", target))
                     else:
                         action, target = self.defence()
                         mode = (action, ("defence", target))
-            else:
-                action, target = self.defence()
-
-                mode = (action, ("defence", target))
+                else:
+                    action, target = self.defence()
+                    mode = (action, ("defence", target))
+            elif self.getEnemyOneAtHome():
+                enemyNeedToTrace = self.getEnemyNeedToTrace()
+                mode = self.trace(enemyNeedToTrace)
+            elif self.getEnemyAllAtOur():
+                enemyNeedToTrace = self.getEnemyNeedToTrace()
+                mode = self.trace(enemyNeedToTrace)
         else:
             return ()
         return mode
@@ -939,6 +961,12 @@ class AttackAgent(CaptureAgent):
         action,target = myProblem.minDistance(self.curPos, [closestMid], self.walls, self)
         self.debugDraw(target,[0.8,0.4,0.2])
         return action,target
+
+    def trace(self, enemyIndex):
+        enemyPos = self.enemyPositionsToDefend[enemyIndex]
+        action, target = myProblem.minDistance(self.curPos, [enemyPos], self.walls, self)
+        mode = action, ("traceEnemy", target)
+        return mode
 
     def aStarSearch(self, problem, gameState, heuristic, timeLimit):
         start = time.clock()
