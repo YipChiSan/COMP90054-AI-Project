@@ -41,6 +41,7 @@ teammateState = {}
 enemyCarryFoodNumber = collections.defaultdict(float)
 actionHistory = {}
 agentMod = {}
+positionHistory  ={}
 
 def createTeam(firstIndex, secondIndex, isRed,
                first='AttackAgent', second='AttackAgent'):
@@ -105,6 +106,7 @@ class AttackAgent(CaptureAgent):
         self.enemyDied[self.enemyIndex[1]] = False
 
         actionHistory[self.index] = []
+        agentMod[self.index] = []
 
     def getMapMatrix(self, gameState):
         """
@@ -319,7 +321,8 @@ class AttackAgent(CaptureAgent):
     def foodBeenEaten(self, gameState):
         if gameState.data.timeleft < 1190:
             curFoods = self.getFoodYouAreDefending(gameState).asList()
-            preFoods = self.getFoodYouAreDefending(self.getPreviousObservation()).asList()
+                                                  # self.getPreviousObservation()
+            preFoods = self.getFoodYouAreDefending(teammateState[self.allienIndex]).asList()
         else:
             return set()
         return set(preFoods) - set(curFoods)
@@ -544,6 +547,39 @@ class AttackAgent(CaptureAgent):
                 enemy = index
         return enemy
 
+    def getClosedFood(self,gameState,teammateTarget):
+        minDist = 999
+        foods = self.getFood(gameState).asList()
+        food = foods[0]
+        foods = list(set(foods) - set(teammateTarget))
+        for i in foods:
+            dist = self.distancer.getDistance(i,self.curPos)
+            if dist < minDist:
+                food = i
+                minDist = dist
+        return food
+
+    def getTeammateTargetRegion(self,gameState):
+        foodCluster = []
+        if agentMod[self.allienIndex] != []:
+            if agentMod[self.allienIndex][0] == "eatFood":
+                foodCluster = InitialMap.cluster1(gameState,agentMod[self.allienIndex][1],self)
+                # self.debugClear()
+                # for i in foodCluster:
+                #     self.debugDraw(i,[0.3,self.index / 4,.5])
+                # self.debugDraw(agentMod[self.allienIndex][1],[0.9,0.6,0.1])
+        return foodCluster
+
+    def getEnemyInsightTogether(self,enemyInsight):
+        posInsight = {}
+        for i in enemyInsight:
+            for j in enemyInsight[i]:
+                if j in posInsight:
+                    posInsight[j] = posInsight[j] + enemyInsight[i][j]
+                else:
+                    posInsight[j] = enemyInsight[i][j]
+        return posInsight
+
     def getFoodsAroundCapsules(self, gameState):
         d = dict()
         foodList = self.getFood(gameState).asList()
@@ -582,7 +618,21 @@ class AttackAgent(CaptureAgent):
 
     ####################################################################################################################
     def chooseAction(self, gameState):
-        pass
+        if debug:
+            self.debugClear()
+        self.curPos = gameState.getAgentPosition(self.index)
+        teammateCluster = self.getTeammateTargetRegion(gameState)
+        closestFood = self.getClosedFood(gameState,teammateCluster)
+        enemyIndices = self.getOpponents(gameState)
+        enemyPos = []
+        for idx in enemyIndices:
+            enemyPos.append(gameState.getAgentPosition(idx))
+        self.foodGrid = self.getFood(gameState)
+        self.carryFoods = gameState.data.agentStates[self.index].numCarrying
+        teammateIndex = self.getIndex(2)
+        teammatePos = gameState.getAgentPosition(teammateIndex)
+
+        return 'Stop'
 
     def aStarSearch(self, problem, gameState, heuristic, timeLimit):
         start = time.clock()
