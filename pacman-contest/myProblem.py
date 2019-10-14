@@ -834,16 +834,24 @@ def getWallsWithAdditionList(gameState, agent, additionList):
 # find shortest path, to any pos in posList
 def minDistance(pos, posList, walls, agent):
     minDist = 9999
-    action = Directions.STOP
+    # action = Directions.STOP
     goal = pos
-    # print(walls)
-    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
+    # print("minDistance=======")
+    # print("curPos:", pos)
+    # agent.debugDraw(pos,[1,0,0])
+    # for i in posList:
+    #     agent.debugDraw(i,[0.5,0.5,0.5])
+    # w = walls.asList()
+    # for i in w:
+    #     agent.debugDraw(i,[0,0,0.9])
+    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST, Directions.STOP]:  # if STOP needed?
         x, y = pos
         dx, dy = Actions.directionToVector(direction)
         nextx, nexty = int(x + dx), int(y + dy)
         wallsList = walls.asList()
         # print("[minDistance]walls", walls)
         # print("[minDistance]wallsList", wallsList)
+        # agent.debugDraw((nextx,nexty),[0.1,0.7,0.3])
         # print("[minDistance]next POS:", (nextx, nexty))
         # print("[minDistance]action", direction)
         # print("isWall in grid", walls[nextx][nexty])
