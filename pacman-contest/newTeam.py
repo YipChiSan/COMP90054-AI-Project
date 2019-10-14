@@ -476,7 +476,7 @@ class AttackAgent(CaptureAgent):
             distanceToFood = self.distancer.getDistance(curPos, i)
             distanceToGhost = min(map(lambda x: self.distancer.getDistance(x, curPos), enemyList))
             dis = distanceToFood - distanceToGhost
-            print(dis)
+            # print(dis)
             if dis < minDis:
                 minDis = dis
                 minPos = i
@@ -576,6 +576,16 @@ class AttackAgent(CaptureAgent):
         for enemy in self.enemyInRegion:
             enemyAllHome = enemyAllHome & (self.enemyInRegion[enemy] != "Our")
         return enemyAllHome
+
+    # def intercept(self,gameState,enemyIndex):
+    #     enemyPositionList = enemyPosition.enemyPosition[enemyIndex]
+    #     minDist = 999
+    #     for i in enemyPositionList:
+    #         for j in self.enemyMidLine:
+    #             dist = self.distancer.getDistance(i,j)
+    #             if minDist > dist:
+    #                 minDist = dist
+    #                 minMid = j
 
     def getEnemyNeedToTrace(self):
         minDist = 9999
@@ -707,7 +717,7 @@ class AttackAgent(CaptureAgent):
             if foodFarFromEnemy:
                 distToFood = self.distancer.getDistance(foodFarFromEnemy,curPos)
             closestMidDist,closestMidPos = self.getClostestMidDistance(curPos,gameState)
-            if ((closestMidDist < 5) and (distToFood > closestMidDist + 4) and self.carryFoods > 0) or (len(self.getFood(gameState).asList()) <=2) or (foodFarFromEnemy is None) and (self.curPos[0] in self.enemyRegionX):
+            if (((closestMidDist < 5) and (distToFood > closestMidDist + 4) and self.carryFoods > 0) or (len(self.getFood(gameState).asList()) <=2) and (self.curPos[0] in self.enemyRegionX)) or (foodFarFromEnemy is None) :
                 # self.debugDraw(foodFarFromEnemy,[self.index/2,0,0])
                 if self.curInsightOfEnemy(curPos,enemyPos):
                     escapeProblem = myProblem.EscapeProblem1(gameState, self)
@@ -864,7 +874,7 @@ class AttackAgent(CaptureAgent):
                 if debug:
                     print("Time used:", elapsed)
                     print("time exceed")
-                return "TIMEEXCEED",None  # for eatOneSafeFood time exceed
+                return "New Team TIMEEXCEED",None  # for eatOneSafeFood time exceed
             else:
                 current_node = frontier.pop()
                 if current_node[0] in best_g.keys():  # reopen
@@ -879,6 +889,7 @@ class AttackAgent(CaptureAgent):
                     best_g[current_node[0]] = current_node[2]
                     visited.add(current_node[0])
                     if problem.isGoalState(gameState, current_node[0]):
+                        print("New Team Time Used:",elapsed)
                         return current_node[1], current_node[0][0]
                     else:
                         for successor in problem.getSuccessors(current_node[0]):
@@ -886,4 +897,5 @@ class AttackAgent(CaptureAgent):
                             priority = cost_g + heuristic(successor[0])
                             path = current_node[1] + [successor[1]]
                             frontier.push((successor[0], path, cost_g), priority)
+        print("New Team Time Used",elapsed)
         return None,None
