@@ -32,8 +32,8 @@ import gameData
 #################
 # Team creation #
 #################
-debug = False
-# debug = True
+# debug = False
+debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 gameData = gameData.gamedata()
 deadEnemy = {}
@@ -746,16 +746,16 @@ class AttackAgent(CaptureAgent):
         self.capsules = self.getCapsules(gameState)
         self.curPos = gameState.getAgentPosition(self.index)
         teammateCluster = self.getTeammateTargetRegion(gameState)
-        enemyIndices = self.getOpponents(gameState)
+        self.enemyIndices = self.getOpponents(gameState)
         self.enemyPos = []
-        for idx in enemyIndices:
+        for idx in self.enemyIndices:
             self.enemyPos.append(gameState.getAgentPosition(idx))
         self.foodGrid = self.getFood(gameState)
         self.carryFoods = gameState.data.agentStates[self.index].numCarrying
         teammateIndex = self.getIndex(2)
         self.teammatePos = gameState.getAgentPosition(teammateIndex)
         self.curInDangerous = self.inDanger(self.curPos)
-        self.teammateInDangerous = self.curInsightOfEnemy(self.teammatePos,self.enemyPos)
+        self.teammateInDangerous = self.inDanger(self.teammatePos)
         self.enemyPositionsToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
         enemySight = self.getEnemySight(enemyPosition.enemyPosition) # [ [(),(),()...], [(),(),(),...] ]
         posInsight = self.getEnemyInsightTogether(enemySight)
@@ -773,30 +773,15 @@ class AttackAgent(CaptureAgent):
             self.enemyCarryFood[i] = gameState.data.agentStates[i].numCarrying
         self.block = self.getBlockRegions(gameState)
         self.ownScaredTimer = gameState.data.agentStates[self.index].scaredTimer
-        self.enemyScaredTimer = [gameState.data.agentStates[idx].scaredTimer for idx in enemyIndices]
+        self.enemyScaredTimer = [gameState.data.agentStates[idx].scaredTimer for idx in self.enemyIndices]
         self.numOfFoodCarried = gameState.data.agentStates[self.index].numCarrying
         self.foodGrid = self.getFood(gameState)
         self.numOfFoodLeft = len(self.foodGrid.asList())
         self.removeFoodsForTeammate(foodCluster)
-        self.foodList = self.foodGrid.asList()
+        self.inImmuneMode = False
         for i in self.foodGrid.asList():
             if debug:
                 self.debugDraw(i,[0,self.index / 3,self.index / 2])
-        # distance to the closest point in own middle line
-        minDistToOwnMid = 999999
-        for midPoint in self.midLine:
-            newDist = self.distancer.getDistance(self.curPos, midPoint)
-            if newDist < minDistToOwnMid:
-                minDistToOwnMid = newDist
-                # closestOwnMidPos = midPoint
-        minDistToFood = 999999
-        for foodPos in self.foodList:
-            newDist = self.distancer.getDistance(self.curPos, foodPos)
-            if newDist < minDistToFood:
-                minDistToFood = newDist
-
-        close = self.curCloseToEnemy(self.curPos, self.enemyPos)
-        insight = self.curInsightOfEnemy(self.curPos, self.enemyPos)
         self.updateEnemyDied()
         ### BEGIN
         mode = self.helpTeammate(gameState)
@@ -825,62 +810,156 @@ class AttackAgent(CaptureAgent):
         return action
 
     def enemyScaredPolicy(self, gameState):
-        minPos, minDistToOwnMid = self.getDistanceToOurMid(self.curPos)
         # enemy scared
         mode = ()
-        timer = None  # None for not using capsule logic
-        if (self.enemyScaredTimer[0] > 0 or self.enemyScaredTimer[1] > 0) and self.curPos[0] in self.enemyRegionX:  # enemy is scared
-            if len(self.foodGrid.asList()) <= 2:
-                action, target = myProblem.reachOwnMidList(self, gameState, self.index)
-                mode = action, ("backToMid", target)
-                print('scared1',self.index, mode)
-                return mode
-            if self.enemyScaredTimer[0] > 0 and self.enemyPos[0] != None:
-                if self.enemyScaredTimer[1] > 0 and self.enemyPos[1] != None:
-                    timer = min(self.enemyScaredTimer[0], self.enemyScaredTimer[1])
-                elif self.enemyPos[1] == None:
-                    timer = self.enemyScaredTimer[0]
-                elif self.enemyScaredTimer[1] == 0 and self.enemyPos[1] != None:
-                    # fixme: 5 need to be modified
-                    if self.distancer.getDistance(self.curPos, self.enemyPos[1]) > 5:
-                        timer = self.enemyScaredTimer[0]
-                if timer != None and timer <= minDistToOwnMid + 1:
-                    action, target = myProblem.reachOwnMidList(self, gameState, self.index)
-                    mode = action, ("backToMid", target)
-                    print('scared2',self.index, mode)
-                elif timer != None and timer > minDistToOwnMid + 1:
-                    action, target = myProblem.minDistance(self.curPos,self.foodGrid.asList(),self.walls,self)
-                        # eatCloseFood(self, gameState, self.index)
-                    mode = action, ("eatFood", target)
-                    print('scared3',self.index, mode)
-            elif self.enemyPos[0] == None:
-                if self.enemyScaredTimer[1] > 0 and self.enemyPos[1] != None:
-                    timer = self.enemyScaredTimer[1]
-                if timer != None and timer <= minDistToOwnMid + 1:
-                    action, target = myProblem.reachOwnMidList(self, gameState, self.index)
-                    mode = action, ("backToMid", target)
-                    print('scared4',self.index, mode)
-                elif timer != None and timer > minDistToOwnMid + 1:
-                    action, target = myProblem.minDistance(self.curPos,self.foodGrid.asList(),self.walls,self)
+        timer = 0  # None for not using capsule logic
+        enemyInfo = dict()
+        enemyInfo[0] = dict()
+        enemyInfo[1] = dict()
+        for idx in enemyInfo:
+            enemyInfo[idx]["pos"] = self.enemyPos[idx]
+            enemyInfo[idx]["scaredTimer"] = self.enemyScaredTimer[idx]
+            # enemyInfo[idx]["inSight"] = self.curInsightOfEnemy(self.curPos, self.enemyPos[idx])
+            enemyInfo[idx]["isDanger"] = self.enemyIsDanger(self.curPos, self.enemyPos[idx])
 
-                    # action, target = myProblem.eatCloseFood(self, gameState, self.index)
-                    mode = action, ("eatFood", target)
-                    print('scared5',self.index, mode)
-            else:  # self.enemyScaredTimer[0] == 0 and enemyPos[0] != None
-                # fixme: 5 need to be modified
-                if self.distancer.getDistance(self.curPos, self.enemyPos[0]) > 5:
-                    timer = self.enemyScaredTimer[1]
-                if timer != None and timer <= minDistToOwnMid + 1:
+        curX, curY = self.curPos
+        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+            dx, dy = Actions.directionToVector(direction)
+            nextx, nexty = int(curX + dx), int(curY + dy)
+            if (enemyInfo[0]["scaredTimer"] == 1 and enemyInfo[0]["pos"] != None and (nextx,nexty) == enemyInfo[0]["pos"]) or (enemyInfo[1]["scaredTimer"] == 1 and enemyInfo[1]["pos"] != None and (nextx,nexty) == enemyInfo[1]["pos"]):
+                mode = (direction, ("eatFood", (nextx, nexty)))
+                print('scared0:eatWhiteGhost', self.index, mode)
+                return mode
+        if enemyInfo[0]["isDanger"] and enemyInfo[1]["isDanger"]:
+            timer = min(enemyInfo[0]["scaredTimer"],enemyInfo[1]["scaredTimer"])
+        elif enemyInfo[0]["isDanger"] and (not enemyInfo[1]["isDanger"]):
+            timer = enemyInfo[0]["scaredTimer"]
+        elif (not enemyInfo[0]["isDanger"]) and enemyInfo[1]["isDanger"]:
+            timer = enemyInfo[1]["scaredTimer"]
+        else: # (not enemyInfo[0]["inSight"]) and (not enemyInfo[1]["inSight"])
+            pass # return directly
+        if timer != 0:
+            # fixme 把inImmuneMode加入判断条件，防止attack选择错误action
+            if len(self.foodGrid.asList()) <= 2:
+                if self.carryFoods > 0:
                     action, target = myProblem.reachOwnMidList(self, gameState, self.index)
-                    mode = action, ("backToMid", target)
-                    print('scared6',self.index, mode)
-                elif timer != None and timer > minDistToOwnMid + 1:
-                    # action, target = myProblem.eatCloseFood(self, gameState, self.index)
-                    action, target = myProblem.minDistance(self.curPos,self.foodGrid.asList(),self.walls,self)
-                    mode = action, ("eatFood", target)
-                    print('scared7',self.index, mode)
-        # print('scared1',self.index, mode)
+                    mode = (action, ("backToMid", target))
+                else: # fixme: 无需吃食物,且身上无食物
+                    pass
+            else:
+                #choose perfect food to eat
+                minSumDist = 99999
+                distToPerfectFood = 99999
+                perfectFood = None
+                for food in self.foodGrid.asList():
+                    distToFood = self.distancer.getDistance(food, self.curPos)
+                    minDistToMid = 99999
+                    minDistToCapsule = 99999
+                    x, y = food
+                    for target in self.midLine:
+                        dist = self.distancer.getDistance((x, y), target)
+                        if dist < minDistToMid:
+                            minDistToMid = dist
+                    for target in self.capsules:
+                        dist = self.distancer.getDistance((x, y), target)
+                        if dist < minDistToMid:
+                            minDistToCapsule = dist
+                    sumDist = distToFood + min(minDistToMid, minDistToCapsule)
+                    if minSumDist > sumDist:
+                        minSumDist = sumDist
+                        perfectFood = food
+                        distToPerfectFood = distToFood
+                    elif minSumDist == sumDist:
+                        if distToPerfectFood > distToFood:
+                            perfectFood = food
+                            distToPerfectFood = distToFood
+
+                if perfectFood != None:
+                    print("!!!!!!!!!!!!!!!!!!!!!!")
+                    print("[enemy scared]eatFoodThenCapsule")
+                    action, target = myProblem.minDistance(self.curPos, [perfectFood], self.walls, self)
+                    print("print perfect food:",perfectFood)
+                    print("!!!!!!!!!!!!!!!!!!!!!!")
+                    if debug:
+                        self.debugDraw(perfectFood, [1,0,0])
+                    mode = (action, ("eatFood", target))
+                else: # cannot find food target, calculate if capsule can be eaten
+                    if not len(self.capsules) == 0:
+                        minDistToCapsule = 99999
+                        targetCapsule = self.capsules[0]
+                        for capsule in self.capsules:
+                            distToCapsule = self.distancer.getDistance(self.curPos, capsule)
+                            if minDistToCapsule > distToCapsule:
+                                minDistToCapsule = distToCapsule
+                                targetCapsule = capsule
+                        if timer <= minDistToCapsule:
+                            action, target = myProblem.minDistance(self.curPos, [targetCapsule], self.walls, self)
+                            mode = (action, ("eatCapsule", target))
+                        else: # reach own mid list
+                            action, target = myProblem.reachOwnMidList(self, gameState, self.index)
+                            mode = (action, ("backToMid", target))
+                    else: # no capsule left,
+                        if self.carryFoods > 0:
+                            action, target = myProblem.reachOwnMidList(self, gameState, self.index)
+                            mode = (action, ("backToMid", target))
+                        else: # fixme: 身上无食物,且需要吃食物
+                            pass
         return mode
+
+        # ##=========================##
+        # if (self.enemyScaredTimer[0] > 0 or self.enemyScaredTimer[1] > 0) and self.curPos[0] in self.enemyRegionX:  # enemy is scared
+        #     if len(self.foodGrid.asList()) <= 2:
+        #         action, target = myProblem.reachOwnMidList(self, gameState, self.index)
+        #         mode = action, ("backToMid", target)
+        #         print('scared1',self.index, mode)
+        #         return mode
+        #     if self.enemyScaredTimer[0] > 0 and self.curInsightOfEnemy(self.curPos, self.enemyPos):
+        #         if self.enemyScaredTimer[1] > 0 and self.enemyPos[1] != None:
+        #             timer = min(self.enemyScaredTimer[0], self.enemyScaredTimer[1])
+        #         elif self.enemyPos[1] == None:
+        #             timer = self.enemyScaredTimer[0]
+        #         elif self.enemyScaredTimer[1] == 0 and self.enemyPos[1] != None:
+        #             # fixme: 5 need to be modified
+        #             if self.distancer.getDistance(self.curPos, self.enemyPos[1]) > 5:
+        #                 timer = self.enemyScaredTimer[0]
+        #         if timer != None and timer <= minDistToOwnMid + 1:
+        #             action, target = myProblem.reachOwnMidList(self, gameState, self.index)
+        #             mode = action, ("backToMid", target)
+        #             print('scared2',self.index, mode)
+        #         elif timer != None and timer > minDistToOwnMid + 1:
+        #             action, target = myProblem.minDistance(self.curPos,self.foodGrid.asList(),self.walls,self)
+        #                 # eatCloseFood(self, gameState, self.index)
+        #             mode = action, ("eatFood", target)
+        #             print('scared3',self.index, mode)
+        #     elif self.enemyPos[0] == None:
+        #         if self.enemyScaredTimer[1] > 0 and self.enemyPos[1] != None:
+        #             timer = self.enemyScaredTimer[1]
+        #         if timer != None and timer <= minDistToOwnMid + 1:
+        #             action, target = myProblem.reachOwnMidList(self, gameState, self.index)
+        #             mode = action, ("backToMid", target)
+        #             print('scared4',self.index, mode)
+        #         elif timer != None and timer > minDistToOwnMid + 1:
+        #             action, target = myProblem.minDistance(self.curPos,self.foodGrid.asList(),self.walls,self)
+        #
+        #             # action, target = myProblem.eatCloseFood(self, gameState, self.index)
+        #             mode = action, ("eatFood", target)
+        #             print('scared5',self.index, mode)
+        #     else:  # self.enemyScaredTimer[0] == 0 and enemyPos[0] != None
+        #         # fixme: 5 need to be modified
+        #         # if self.distancer.getDistance(self.curPos, self.enemyPos[0]) > 5:#fixme: indanger
+        #         if self.inDanger(self.curPos):
+        #             timer = self.enemyScaredTimer[1]
+        #         if timer != None and timer <= minDistToOwnMid + 1:
+        #             action, target = myProblem.reachOwnMidList(self, gameState, self.index)
+        #             mode = action, ("backToMid", target)
+        #             print('scared6',self.index, mode)
+        #         elif timer != None and timer > minDistToOwnMid + 1:
+        #             # action, target = myProblem.eatCloseFood(self, gameState, self.index)
+        #             action, target = myProblem.minDistance(self.curPos,self.foodGrid.asList(),self.walls,self)
+        #             mode = action, ("eatFood", target)
+        #             print('scared7',self.index, mode)
+        # # print('scared1',self.index, mode)
+        # return mode
 
     def legalAction(self, action):
         return not (action == [] or action == None or action == "TIMEEXCEED")
@@ -909,16 +988,15 @@ class AttackAgent(CaptureAgent):
                 if hasSafefood and not hasCapsule and not hasPathToEscape:
                     mode = (actions1[0], ("eatFood",target1))
                     print('1',mode)
-
                 elif not hasSafefood and hasCapsule and not hasPathToEscape:
-
                     mode = (actions2[0], ("eatCapsule",target2))
                     print('2',mode)
                 elif not hasSafefood and not hasCapsule and hasPathToEscape:
                     mode = (actions3[0], ("backToMid",target3))
                     print('3',mode)
                 elif not hasSafefood and hasCapsule and hasPathToEscape:
-                    if self.carryFoods > (len(self.getFood(gameState).asList()) / 3) :
+                    #fixme
+                    if self.carryFoods > (len(self.getFood(gameState).asList()) / 3) and (not self.inImmuneMode):
                         # if distanceToEscape < distanceToNearestCapsule + (len(self.getFoodsAroundCapsules(gameState)[target2]) / 5):
                         #     print('4')
                         #     mode = (actions3[0], ("backToMid",target3))
@@ -929,7 +1007,7 @@ class AttackAgent(CaptureAgent):
                         mode = (actions2[0], ("eatCapsule",target2))
                         print('5.5',mode)
                 elif hasSafefood and hasCapsule and hasPathToEscape:
-                    if self.carryFoods > 0:
+                    if self.carryFoods > 0 and (not self.inImmuneMode):
                         # (len(self.getFood(gameState).asList()) / 3) :
                         if distanceToEscape <= 1:
                                 # distanceToNearestCapsule + (len(self.getFoodsAroundCapsules(gameState)[target2])):
@@ -955,21 +1033,18 @@ class AttackAgent(CaptureAgent):
                         mode = map[minDis]
                         print("8",mode)
                 elif hasSafefood and hasCapsule and not hasPathToEscape:
-                    if self.carryFoods >= len(self.getFood(gameState).asList()) :
-
+                    if self.carryFoods >= len(self.getFood(gameState).asList()) and (not self.inImmuneMode):
                         mode = (actions2[0], ("eatCapsule",target2))
                         print('9',mode)
                     elif hasSafefood:
                         if distanceToNearestFood + 3 < distanceToNearestCapsule:
-
                             mode = (actions1[0], ("eatFood",target1))
                             print('10',mode)
                         else:
-
                             mode = (actions2[0], ("eatCapsule",target2))
                             print('11',mode)
                 elif hasSafefood and not hasCapsule and hasPathToEscape:
-                    if self.carryFoods >= len(self.getFood(gameState).asList()):
+                    if self.carryFoods >= len(self.getFood(gameState).asList()) and (not self.inImmuneMode):
                         mode = (actions3[0], ("backToMid",target3))
                         print('12',mode)
                     else:
@@ -1019,12 +1094,17 @@ class AttackAgent(CaptureAgent):
                 minPos = pos
         return minPos, minDis
 
+    def enemyIsDanger(self, pos, enemyPos):# single position
+        danger = False
+        if not enemyPos is None:
+            if enemyPos[0] in self.enemyRegionX or enemyPos in self.midLine:
+                danger = danger or self.distancer.getDistance(pos, enemyPos) <= 5
+        return danger
+
     def inDanger(self, pos):
         inFiveSteps = False
         for i in self.enemyPos:
-            if not i is None:
-                if i[0] in self.enemyRegionX or i in self.midLine:
-                    inFiveSteps = inFiveSteps or self.distancer.getDistance(pos, i) <= 5
+            inFiveSteps = inFiveSteps or self.enemyIsDanger(pos, i)
         beSeen = self.curInsightOfEnemy(pos, self.enemyPos)
         return beSeen and inFiveSteps and (pos[0] in self.enemyRegionX or (pos in self.midLine))
 
