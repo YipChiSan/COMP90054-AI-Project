@@ -848,7 +848,7 @@ class AttackAgent(CaptureAgent):
                 elif hasSafefood and hasCapsule and hasPathToEscape:
                     if self.carryFoods > 0:
                         # (len(self.getFood(gameState).asList()) / 3) :
-                        if distanceToEscape < 1:
+                        if distanceToEscape <= 1:
                                 # distanceToNearestCapsule + (len(self.getFoodsAroundCapsules(gameState)[target2])):
                             mode = (actions3[0], ("backToMid",target3))
                             print('6',mode)
@@ -856,19 +856,19 @@ class AttackAgent(CaptureAgent):
                             mode = (actions2[0], ("eatCapsule",target2))
                             print('7',mode)
                     else:
-                        if self.carryFoods >0:
-                            map = {
-                                distanceToNearestFood: (actions1[0], ("eatFood", target1)),
-                                distanceToNearestCapsule: (actions2[0], ("eatCapsule", target2)),
-                                distanceToEscape+10: (actions3[0], ("backToMid", target3))
-                            }
-                            minDis = min(distanceToNearestFood, distanceToNearestCapsule,distanceToEscape+10)
-                        else:
-                            map = {
-                                distanceToNearestFood: (actions1[0], ("eatFood", target1)),
-                                distanceToNearestCapsule: (actions2[0], ("eatCapsule", target2))
-                            }
-                            minDis = min(distanceToNearestFood, distanceToNearestCapsule)
+                        # if self.carryFoods > 0:
+                        #     map = {
+                        #         distanceToNearestFood: (actions1[0], ("eatFood", target1)),
+                        #         distanceToNearestCapsule: (actions2[0], ("eatCapsule", target2)),
+                        #         distanceToEscape+10: (actions3[0], ("backToMid", target3))
+                        #     }
+                        #     minDis = min(distanceToNearestFood, distanceToNearestCapsule,distanceToEscape+10)
+                        # else:
+                        map = {
+                            distanceToNearestFood: (actions1[0], ("eatFood", target1)),
+                            distanceToNearestCapsule: (actions2[0], ("eatCapsule", target2))
+                        }
+                        minDis = min(distanceToNearestFood, distanceToNearestCapsule)
                         mode = map[minDis]
                         print("8",mode)
                 elif hasSafefood and hasCapsule and not hasPathToEscape:
@@ -935,13 +935,13 @@ class AttackAgent(CaptureAgent):
         return minPos, minDis
 
     def inDanger(self, pos):
-        inThreeSteps = False
+        inFiveSteps = False
         for i in self.enemyPos:
             if not i is None:
                 if i[0] in self.enemyRegionX or i in self.midLine:
-                    inThreeSteps = inThreeSteps or self.distancer.getDistance(pos, i) <= 5
+                    inFiveSteps = inFiveSteps or self.distancer.getDistance(pos, i) <= 5
         beSeen = self.curInsightOfEnemy(pos, self.enemyPos)
-        return beSeen and inThreeSteps and (pos[0] in self.enemyRegionX or (pos in self.midLine))
+        return beSeen and inFiveSteps and (pos[0] in self.enemyRegionX or (pos in self.midLine))
 
     # def whenBackToMid(self):
     #
@@ -1009,7 +1009,7 @@ class AttackAgent(CaptureAgent):
         mode = ()
         if self.ownScaredTimer>0:
             # print(self.foodGrid.asList())
-            if self.foodGrid.asList() != [] or (len(self.getFood.asList()) <= 2):
+            if self.foodGrid.asList() != [] or (len(self.getFood(gameState).asList()) <= 2):
                 mode = self.attack(gameState)
             else:
                 print("**********")
