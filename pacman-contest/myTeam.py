@@ -32,8 +32,8 @@ import gameData
 #################
 # Team creation #
 #################
-debug = False
-# debug = True
+# debug = False
+debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 gameData = gameData.gamedata()
 deadEnemy = {}
@@ -89,6 +89,7 @@ class AttackAgent(CaptureAgent):
         self.randomSelectFood = True
         self.allienIndex = (self.index + 2) % 4
         self.lastAction = None
+        self.start = True
         # list of Xs of region for different sidee
         if self.red:
             self.enemyIndex = [1, 3]
@@ -666,16 +667,17 @@ class AttackAgent(CaptureAgent):
         return chasePos
 
     def interceptToMid(self,gameState):
-        enemyChase = self.getClosedEnemy(gameState)
+        enemyChase = self.enemyPositionsToDefend[self.getEnemyNeedToTrace()]
         if not enemyChase is None:
-            print("*************intercept****************")
+            print("*************interceptToMid****************")
             path = self.pathToMidEnemy(gameState,enemyChase)
             # action,target = myProblem.minDistance(self.curPos,path,self.walls,self)
             for i in path:
                 if debug:
                     self.debugDraw(i,[0.6,0.3,0.7])
             minDist = 9999
-            action,target = myProblem.minDistance(self.curPos,[enemyChase],self.walls,self)
+            walls = self.getNewWalls(self.enemyMidLine)
+            action,target = myProblem.minDistance(self.curPos,[enemyChase],walls,self)
             (x,y) = self.curPos
             if path != []:
                 for direction in [Directions.NORTH, Directions.SOUTH, Directions.WEST,Directions.EAST,Directions.STOP]:  # , Directions.EAST]:
@@ -696,8 +698,7 @@ class AttackAgent(CaptureAgent):
         return mode
 
     def intercept(self,gameState):
-
-        enemyChase = self.getClosedEnemy(gameState)
+        enemyChase = self.enemyPositionsToDefend[self.getEnemyNeedToTrace()]
         if not enemyChase is None:
             print("*************intercept****************")
             path = self.pathToCloseFoodFromEnemy(gameState,enemyChase)
@@ -706,6 +707,7 @@ class AttackAgent(CaptureAgent):
                 if debug:
                     self.debugDraw(i,[0.6,0.3,0.7])
             minDist = 9999
+
             action,target = myProblem.minDistance(self.curPos,[enemyChase],self.walls,self)
             (x,y) = self.curPos
             if path != []:
@@ -981,10 +983,22 @@ class AttackAgent(CaptureAgent):
                 problem = myProblem.EatCapsuleProblem(gameState, self)
                 actions2, target2 = self.aStarSearch(problem, gameState, problem.eatCapsuleHeuristic, 0.2)
                 hasCapsule = self.legalAction(actions2)
+                if hasCapsule:
+                    path = self.convertActionsToPath(self.curPos,actions2)
+                    for i in path:
+                        self.debugDraw(i,[0,0.4,0.9])
+                if hasSafefood:
+                    path = self.convertActionsToPath(self.curPos,actions1)
+                    for i in path:
+                        self.debugDraw(i,[0.7,0.4,0.9])
 
                 problem = myProblem.EscapeProblem1(gameState, self)
                 actions3, target3 = self.aStarSearch(problem, gameState, problem.EscapeHeuristic, 0.2)
                 hasPathToEscape = self.legalAction(actions3)
+                if hasPathToEscape:
+                    path = self.convertActionsToPath(self.curPos,actions3)
+                    for i in path:
+                        self.debugDraw(i,[0.2,0.1,0.9])
 
                 distanceToNearestFood = len(actions1) if actions1 else 999999
                 distanceToNearestCapsule = len(actions2) if actions2 else 999999
@@ -1048,6 +1062,13 @@ class AttackAgent(CaptureAgent):
                             print('10',mode)
                         else:
                             mode = (actions2[0], ("eatCapsule",target2))
+                            path = self.convertActionsToPath(self.curPos,actions2)
+                            num = 0
+                            for i in path:
+                                if i[0] in self.ourRegionX:
+                                    num += 1
+                            if num > 4:
+                                self.start = True
                             print('11',mode)
                 elif hasSafefood and not hasCapsule and hasPathToEscape:
                     if self.carryFoods >= len(self.getFood(gameState).asList()) and (not self.inImmuneMode):
@@ -1082,11 +1103,18 @@ class AttackAgent(CaptureAgent):
                     mode = (action, ("eatFood", target))
                     print(self.index,mode)
         else:
-            if self.curInDangerous:
-                action, target = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
+            if self.curPos[0] in self.ourRegionX:
+                midPos = self.getMiddleLinePositionToAttack(self.enemyPositionsToDefend)
+                action,target = myProblem.minDistance(self.curPos,[midPos],self.walls,self)
+                if debug:
+                    self.debugDraw(midPos,[1,0,0])
+                mode = (action,("eatFood",target))
             else:
-                action, target = myProblem.minDistance(self.curPos, self.midLine, self.walls, self)
-            mode = (action, ("backToMid", target))
+                if self.curInDangerous:
+                    action, target = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
+                else:
+                    action, target = myProblem.minDistance(self.curPos, self.midLine, self.walls, self)
+                mode = (action, ("backToMid", target))
             print(self.index, mode)
         return mode
 
@@ -1130,15 +1158,19 @@ class AttackAgent(CaptureAgent):
             if self.enemyAllHome:
                 if self.canAttact:
                     if (self.enemyDied[self.enemyIndex[0]] or self.enemyDied[self.enemyIndex[1]]) or (self.index == 0 or self.index == 1):
-                        if (not self.curPos in self.midLine):
-                            midPos = self.getMiddleLinePositionToAttack(self.enemyPositionsToDefend)
-                            action,target = myProblem.minDistance(self.curPos,[midPos],self.walls,self)
-                            if debug:
-                                self.debugDraw(midPos,[1,0,0])
-                            mode = (action,("eatFood",target))
-                            return mode
-                        else:
+                        # if (not self.curPos in self.midLine):
+                        midPos = self.getMiddleLinePositionToAttack(self.enemyPositionsToDefend)
+                        action,target = myProblem.minDistance(self.curPos,[midPos],self.walls,self)
+                        if debug:
+                            self.debugDraw(midPos,[1,0,0])
+                        if not self.start:
                             return ()
+                        else:
+                            mode = (action,("eatFood",target))
+                            self.start = False
+                            return mode
+                        # else:
+                        #     return ()
                     else:
                         # action, target = self.defence()
                         # mode = (action, ("defence", target))
