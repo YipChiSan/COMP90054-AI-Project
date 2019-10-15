@@ -1009,7 +1009,7 @@ class AttackAgent(CaptureAgent):
         mode = ()
         if self.ownScaredTimer>0:
             # print(self.foodGrid.asList())
-            if self.foodGrid.asList() != [] or (len(self.getFood(gameState).asList()) <= 2):
+            if self.foodGrid.asList() != [] and len(self.getFood(gameState).asList()) > 2:
                 mode = self.attack(gameState)
             else:
                 print("**********")
