@@ -32,8 +32,8 @@ import gameData
 #################
 # Team creation #
 #################
-# debug = False
-debug = True
+debug = False
+# debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 gameData = gameData.gamedata()
 deadEnemy = {}
