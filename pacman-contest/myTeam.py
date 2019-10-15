@@ -635,6 +635,25 @@ class AttackAgent(CaptureAgent):
             if dist1 > dist2 - 5:
                 self.foodGrid[i[0]][i[1]] = False
 
+    def convertActionsToPath(self, startPos, actions):
+        x, y = startPos
+        pathList = []
+        for action in actions:
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            pathList.append((nextx, nexty))
+            x = nextx
+            y = nexty
+        return pathList
+
+    def pathToCloseFoodFromEnemy(self, gameState, enemyPos):
+        problem = myProblem.EnemyEatCloseFoodProblem(gameState, self, enemyPos)
+        actions, target = self.aStarSearch(problem, gameState, problem.EnemyEatCloseFoodHeuristic, 0.03)
+        pathList = self.convertActionsToPath(enemyPos, actions)
+        if actions == [] or actions == "TIMEEXCEED" or actions == None:
+            return []
+        return pathList
+
     ####################################################################################################################
     def chooseAction(self, gameState):
         print("=============",self.index,"==============")
@@ -677,20 +696,6 @@ class AttackAgent(CaptureAgent):
         self.foodGrid = self.getFood(gameState)
         self.numOfFoodLeft = len(self.foodGrid.asList())
         self.removeFoodsForTeammate(foodCluster)
-        self.foodList = self.foodGrid.asList()
-
-        # distance to the closest point in own middle line
-        minDistToOwnMid = 999999
-        for midPoint in self.midLine:
-            newDist = self.distancer.getDistance(self.curPos, midPoint)
-            if newDist < minDistToOwnMid:
-                minDistToOwnMid = newDist
-                # closestOwnMidPos = midPoint
-        minDistToFood = 999999
-        for foodPos in self.foodList:
-            newDist = self.distancer.getDistance(self.curPos, foodPos)
-            if newDist < minDistToFood:
-                minDistToFood = newDist
 
         close = self.curCloseToEnemy(self.curPos, self.enemyPos)
         insight = self.curInsightOfEnemy(self.curPos, self.enemyPos)

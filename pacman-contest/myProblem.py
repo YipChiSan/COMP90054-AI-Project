@@ -337,11 +337,11 @@ class EatOneSafeFoodProblem:
         self.enemyIndices = agent.getOpponents(gameState)
         self.foods = agent.foodGrid.deepCopy()
         self.foodList = self.foods.asList()
-        self.enemyPositions = set()
+        self.enemyPositions = []
         for idx in self.enemyIndices:
             enemyPos = gameState.getAgentPosition(idx)
             if enemyPos != None:
-                self.enemyPositions.add(enemyPos)
+                self.enemyPositions.append(enemyPos)
         self.enemyPositions = tuple(self.enemyPositions)
         self.startPos = gameState.getAgentPosition(self.index)
         self.ownScaredTimer = gameState.data.agentStates[self.index].scaredTimer
@@ -352,8 +352,8 @@ class EatOneSafeFoodProblem:
             if timer > 1:
                 removeIndex = self.enemyIndices[listIndex]
                 removePos = gameState.getAgentPosition(removeIndex)
+                print("EatOneSafeFoodProblem: remove white ghost with timer > 1, pos:", removePos)
                 if removePos != None:
-                    print("remove white ghost with timer > 1")
                     positions = list(self.enemyPositions)
                     positions.remove(removePos)
                     self.enemyPositions = tuple(positions)
@@ -487,11 +487,11 @@ class EatCapsuleProblem:
         self.middleLine = agent.midLine
         self.enemyMiddleLine = agent.enemyMidLine
         self.enemyIndices = agent.getOpponents(gameState)
-        self.enemyPositions = set()
+        self.enemyPositions = []
         for idx in self.enemyIndices:
             enemyPos = gameState.getAgentPosition(idx)
             if enemyPos != None:
-                self.enemyPositions.add(enemyPos)
+                self.enemyPositions.append(enemyPos)
         self.enemyPositions = tuple(self.enemyPositions)
         self.startPos = gameState.getAgentPosition(self.index)
         #fixme:
@@ -501,8 +501,8 @@ class EatCapsuleProblem:
             if timer > 1:
                 removeIndex = self.enemyIndices[listIndex]
                 removePos = gameState.getAgentPosition(removeIndex)
+                print("EatCapsuleProblem: remove white ghost with timer > 1, pos:", removePos)
                 if removePos != None:
-                    print("remove white ghost with timer > 1")
                     positions = list(self.enemyPositions)
                     positions.remove(removePos)
                     self.enemyPositions = tuple(positions)
@@ -610,11 +610,11 @@ class EscapeProblem1:
         self.enemyIndices = agent.getOpponents(gameState)
         self.foods = agent.foodGrid.deepCopy()
         self.foodList = self.foods.asList()
-        self.enemyPositions = set()
+        self.enemyPositions = []
         for idx in self.enemyIndices:
             enemyPos = gameState.getAgentPosition(idx)
             if enemyPos != None:
-                self.enemyPositions.add(enemyPos)
+                self.enemyPositions.append(enemyPos)
         self.enemyPositions = tuple(self.enemyPositions)
         #fixme:
         # remove white ghost with timer > 1
@@ -623,8 +623,8 @@ class EscapeProblem1:
             if timer > 1:
                 removeIndex = self.enemyIndices[listIndex]
                 removePos = gameState.getAgentPosition(removeIndex)
+                print("EscapeProblem1: remove white ghost with timer > 1, pos:", removePos)
                 if removePos != None:
-                    print("remove white ghost with timer > 1")
                     positions = list(self.enemyPositions)
                     positions.remove(removePos)
                     self.enemyPositions = tuple(positions)
@@ -969,7 +969,7 @@ def eatCloseFoodAvoidGhost(agent, gameState, index):
 
 def eatRandomFood(agent, gameState, index):
     foodIndex = agent.randomFoodIndex
-    foodPos = agent.foodList[foodIndex]
+    foodPos = agent.foodGrid.asList()[foodIndex]
     pos = gameState.getAgentPosition(index)
     walls = getActualWalls(gameState, agent)
     action, target = minDistance(pos, [foodPos], walls, agent)
