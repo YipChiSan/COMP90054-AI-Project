@@ -404,7 +404,8 @@ class AttackAgent(CaptureAgent):
         enemyPositionDict = {}
         for index in self.enemyIndex:
             minDis = 999999
-            minPos = None
+            #fixme:
+            minPos = random.choice(enemyPosition[index])
             for food in curFoods:
                 for pos in enemyPosition[index]:
                     dis = self.distancer.getDistance(food, pos)
@@ -754,8 +755,6 @@ class AttackAgent(CaptureAgent):
         self.carryFoods = gameState.data.agentStates[self.index].numCarrying
         teammateIndex = self.getIndex(2)
         self.teammatePos = gameState.getAgentPosition(teammateIndex)
-        self.curInDangerous = self.inDanger(self.curPos)
-        self.teammateInDangerous = self.inDanger(self.teammatePos)
         self.enemyPositionsToDefend = self.getNeedOfDefenceEnemyPosition(gameState, enemyPosition.enemyPosition)
         enemySight = self.getEnemySight(enemyPosition.enemyPosition) # [ [(),(),()...], [(),(),(),...] ]
         posInsight = self.getEnemyInsightTogether(enemySight)
@@ -778,11 +777,14 @@ class AttackAgent(CaptureAgent):
         self.foodGrid = self.getFood(gameState)
         self.numOfFoodLeft = len(self.foodGrid.asList())
         self.removeFoodsForTeammate(foodCluster)
+        self.curInDangerous = self.inDanger(self.curPos)
+        self.teammateInDangerous = self.inDanger(self.teammatePos)
         self.inImmuneMode = False
         for i in self.foodGrid.asList():
             if debug:
                 self.debugDraw(i,[0,self.index / 3,self.index / 2])
         self.updateEnemyDied()
+        
         ### BEGIN
         mode = self.helpTeammate(gameState)
         if mode != ():
@@ -1106,7 +1108,9 @@ class AttackAgent(CaptureAgent):
         for i in self.enemyPos:
             inFiveSteps = inFiveSteps or self.enemyIsDanger(pos, i)
         beSeen = self.curInsightOfEnemy(pos, self.enemyPos)
-        return beSeen and inFiveSteps and (pos[0] in self.enemyRegionX or (pos in self.midLine))
+        beScaredInOurRegion = (self.ownScaredTimer > 0 and pos[0] in self.ourRegionX)
+        inEnemyRegion = pos[0] in self.enemyRegionX or (pos in self.midLine)
+        return beSeen and inFiveSteps and (inEnemyRegion or beScaredInOurRegion)
 
     # def whenBackToMid(self):
     #
