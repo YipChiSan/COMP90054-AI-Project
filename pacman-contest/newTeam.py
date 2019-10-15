@@ -875,7 +875,7 @@ class AttackAgent(CaptureAgent):
                 if debug:
                     print("Time used:", elapsed)
                     print("time exceed")
-                return "New Team TIMEEXCEED",None  # for eatOneSafeFood time exceed
+                return "Team TIMEEXCEED",None  # for eatOneSafeFood time exceed
             else:
                 current_node = frontier.pop()
                 if current_node[0] in best_g.keys():  # reopen

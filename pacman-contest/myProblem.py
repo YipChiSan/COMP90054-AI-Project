@@ -268,6 +268,44 @@ class EnemyEatCloseFoodProblem:
             minDist = min(minDist, dis)
         return minDist
 
+class EnemyBackToMid:
+    def __init__(self, gameState, agent, enemyPos):
+        # self.index = enemyIndex
+        self.agent = agent
+        self.walls = gameState.getWalls().deepCopy()
+        self.middleX = agent.midX
+        self.enemyMiddleX = agent.enemyMidX
+        self.middleLine = agent.midLine
+        self.enemyMiddleLine = agent.enemyMidLine
+        self.foods = agent.getFoodYouAreDefending(gameState).deepCopy()
+        self.foodList = self.foods.asList()
+        self.startPos = enemyPos
+        self.range = agent.enemyRegionX
+
+    def getStartState(self, gameState, foodGrid):
+        # 3: num of steps; 4: DeadEnd depth
+        return (self.startPos)
+
+    def isGoalState(self, gameState, state):
+        return state[0] in self.range
+
+    def getSuccessors(self, state):
+        successors = []
+        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
+            x, y = state
+            dx, dy = Actions.directionToVector(direction)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                successors.append((((nextx, nexty)), direction, 1))
+        return successors
+
+    def BackToMidHeuristic(self, state):
+        (curPos) = state
+        minDist = 9999
+        for pos in self.enemyMiddleLine:
+            dis = self.agent.distancer.getDistance(curPos, pos)
+            minDist = min(minDist, dis)
+        return minDist
 
 # calculate path for eating X closest food from target
 class EatXClosestFoodFromTargetFoodProblem:
@@ -833,7 +871,7 @@ def getWallsWithAdditionList(gameState, agent, additionList):
 # find shortest path, to any pos in posList
 def minDistance(pos, posList, walls, agent,secondList = []):
     minDist = 9999
-    # action = Directions.STOP
+    action = Directions.STOP
     goal = pos
     # print("minDistance=======")
     # print("curPos:", pos)

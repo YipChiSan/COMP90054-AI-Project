@@ -619,6 +619,108 @@ class AttackAgent(CaptureAgent):
                 insight = insight or (manhattanDistance(curPos, enemy) <= 5)
         return insight
 
+    def convertActionsToPath(self, startPos, actions):
+        x, y = startPos
+        pathList = []
+        for action in actions:
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            pathList.append((nextx, nexty))
+            x = nextx
+            y = nexty
+        return pathList
+
+    def pathToCloseFoodFromEnemy(self, gameState, enemyPos):
+        problem = myProblem.EnemyEatCloseFoodProblem(gameState, self, enemyPos)
+        actions, target = self.aStarSearch(problem, gameState, problem.EnemyEatCloseFoodHeuristic, 0.3)
+        if actions == [] or actions == "TIMEEXCEED" or actions == None:
+            return []
+        else:
+            pathList = self.convertActionsToPath(enemyPos, actions)
+        return pathList
+
+    def pathToMidEnemy(self,gameState,enemyPos):
+        problem = myProblem.EnemyBackToMid(gameState, self, enemyPos)
+        actions, target = self.aStarSearch(problem, gameState, problem.BackToMidHeuristic, 0.3)
+        if actions == [] or actions == "TIMEEXCEED" or actions == None:
+            return []
+        else:
+            pathList = self.convertActionsToPath(enemyPos, actions)
+        return pathList
+
+
+    def getClosedEnemy(self,gameState):
+        enemyPos = self.getEnemyTrueP(gameState)
+        chasePos = None
+        food = -1
+        for i in self.enemyIndex:
+            if (self.enemyInRegion[i] == "Our" or enemyPos[i] in self.enemyMidLine) and (not enemyPos[i] is None):
+                if food < self.enemyCarryFood[i]:
+                    food = self.enemyCarryFood[i]
+                    chasePos = enemyPos[i]
+        return chasePos
+
+    def interceptToMid(self,gameState):
+        enemyChase = self.getClosedEnemy(gameState)
+        if not enemyChase is None:
+            print("*************intercept****************")
+            path = self.pathToMidEnemy(gameState,enemyChase)
+            # action,target = myProblem.minDistance(self.curPos,path,self.walls,self)
+            for i in path:
+                if debug:
+                    self.debugDraw(i,[0.6,0.3,0.7])
+            minDist = 9999
+            action,target = myProblem.minDistance(self.curPos,[enemyChase],self.walls,self)
+            (x,y) = self.curPos
+            if path != []:
+                for direction in [Directions.NORTH, Directions.SOUTH, Directions.WEST,Directions.EAST,Directions.STOP]:  # , Directions.EAST]:
+                    dx, dy = Actions.directionToVector(direction)
+                    nextx, nexty = int(x + dx), int(y + dy)
+                    # print("test",self.curPos,(nextx,nexty),path)
+                    if not (nextx,nexty) in self.walls.asList() and (not (nextx,nexty) in self.enemyMidLine):
+                        distToPath = min(map(lambda a: self.distancer.getDistance(a, (nextx,nexty)), path))
+                        distToEnemy = self.distancer.getDistance((nextx,nexty),enemyChase)
+                        dist = distToEnemy + distToPath
+                        if dist < minDist:
+                            minDist = dist
+                            action = direction
+                            target = (nextx,nexty)
+            mode = (action,("trace",target))
+        else:
+            mode = ()
+        return mode
+
+    def intercept(self,gameState):
+
+        enemyChase = self.getClosedEnemy(gameState)
+        if not enemyChase is None:
+            print("*************intercept****************")
+            path = self.pathToCloseFoodFromEnemy(gameState,enemyChase)
+            # action,target = myProblem.minDistance(self.curPos,path,self.walls,self)
+            for i in path:
+                if debug:
+                    self.debugDraw(i,[0.6,0.3,0.7])
+            minDist = 9999
+            action,target = myProblem.minDistance(self.curPos,[enemyChase],self.walls,self)
+            (x,y) = self.curPos
+            if path != []:
+                for direction in [Directions.NORTH, Directions.SOUTH, Directions.WEST,Directions.EAST,Directions.STOP]:  # , Directions.EAST]:
+                    dx, dy = Actions.directionToVector(direction)
+                    nextx, nexty = int(x + dx), int(y + dy)
+                    # print("test",self.curPos,(nextx,nexty),path)
+                    if not (nextx,nexty) in self.walls.asList() and (not (nextx,nexty) in self.enemyMidLine):
+                        distToPath = min(map(lambda a: self.distancer.getDistance(a, (nextx,nexty)), path))
+                        distToEnemy = self.distancer.getDistance((nextx,nexty),enemyChase)
+                        dist = distToEnemy + distToPath
+                        if dist < minDist:
+                            minDist = dist
+                            action = direction
+                            target = (nextx,nexty)
+            mode = (action,("trace",target))
+        else:
+            mode = ()
+        return mode
+
     def curCloseToEnemy(self, curPos, enemyList):
         close = False
         for enemy in enemyList:
@@ -633,25 +735,6 @@ class AttackAgent(CaptureAgent):
             # print(self.curPos,self.teammatePos,i,dist1,dist2)
             if dist1 > dist2 - 5:
                 self.foodGrid[i[0]][i[1]] = False
-
-    def convertActionsToPath(self, startPos, actions):
-        x, y = startPos
-        pathList = []
-        for action in actions:
-            dx, dy = Actions.directionToVector(action)
-            nextx, nexty = int(x + dx), int(y + dy)
-            pathList.append((nextx, nexty))
-            x = nextx
-            y = nexty
-        return pathList
-
-    def pathToCloseFoodFromEnemy(self, gameState, enemyPos):
-        problem = myProblem.EnemyEatCloseFoodProblem(gameState, self, enemyPos)
-        actions, target = self.aStarSearch(problem, gameState, problem.EnemyEatCloseFoodHeuristic, 0.03)
-        pathList = self.convertActionsToPath(enemyPos, actions)
-        if actions == [] or actions == "TIMEEXCEED" or actions == None:
-            return []
-        return pathList
 
     ####################################################################################################################
     def chooseAction(self, gameState):
@@ -685,6 +768,7 @@ class AttackAgent(CaptureAgent):
         # self.pacmanEnemy = self.pacmanEnemy(self.enemyPos)
         self.teammateCarryFood = gameState.data.agentStates[self.allienIndex].numCarrying
         self.enemyCarryFood = {}
+        self.canAttact = self.foodGrid.asList() != [] and len(self.getFood(gameState).asList()) > 2
         for i in self.enemyIndex:
             self.enemyCarryFood[i] = gameState.data.agentStates[i].numCarrying
         self.block = self.getBlockRegions(gameState)
@@ -695,9 +779,9 @@ class AttackAgent(CaptureAgent):
         self.numOfFoodLeft = len(self.foodGrid.asList())
         self.removeFoodsForTeammate(foodCluster)
         self.foodList = self.foodGrid.asList()
-        if debug:
-            a = self.getMiddleLinePositionToAttack(self.enemyPositionsToDefend)
-            self.debugDraw(a, [1,0,0])
+        for i in self.foodGrid.asList():
+            if debug:
+                self.debugDraw(i,[0,self.index / 3,self.index / 2])
         # distance to the closest point in own middle line
         minDistToOwnMid = 999999
         for midPoint in self.midLine:
@@ -734,7 +818,6 @@ class AttackAgent(CaptureAgent):
                     else:
                         action = 'Stop'
                         agentMod[self.index] = ("stop",self.curPos)
-
         self.updateDeath(gameState, action)
         teammateState[self.index] = gameState.generateSuccessor(self.index,action)
         actionHistory[self.index].append(action)
@@ -821,7 +904,7 @@ class AttackAgent(CaptureAgent):
                 distanceToNearestFood = len(actions1) if actions1 else 999999
                 distanceToNearestCapsule = len(actions2) if actions2 else 999999
                 distanceToEscape = len(actions3) if actions3 else 999999
-                print("========= attact ============")
+                print("========= attack ============")
                 print(hasCapsule)
                 if hasSafefood and not hasCapsule and not hasPathToEscape:
                     mode = (actions1[0], ("eatFood",target1))
@@ -905,9 +988,11 @@ class AttackAgent(CaptureAgent):
             else:
                 # foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
                 closestFood = self.getClosedFood()
+                if debug:
+                    self.debugDraw(closestFood,[self.index/3,0.3,0.6])
                 midDis, midPos = self.getClostestMidDistance(self.curPos)
                 foodDis = self.distancer.getDistance(closestFood, self.curPos)
-                if (foodDis > midDis + 5) and (self.carryFoods > 0):
+                if (foodDis > midDis + 5) and (self.carryFoods > 0) and (midDis < 2):
                     action, target = myProblem.minDistance(self.curPos, [midPos], self.walls, self)
                     mode = (action, ("backToMid", target))
                     print(self.index,mode)
@@ -948,54 +1033,78 @@ class AttackAgent(CaptureAgent):
 
     def inOurRegion(self, gameState):
         mode = ()
-        if self.curPos[0] in self.ourRegionX and (not self.curPos in self.midLine):
+        if self.curPos[0] in self.ourRegionX:
             mode = self.beenScared(gameState)
         if mode != ():
             return mode
-        elif (self.curPos[0] in self.ourRegionX) and (not self.curPos in self.midLine) and mode == ():
+        elif (self.curPos[0] in self.ourRegionX) and mode == ():
+            print("^^^^^^^^^^^^^^^^ in our region ^^^^^^^^^^^^^^^^^")
             if self.enemyAllHome:
-                if self.foodGrid.asList() != []:
+                if self.canAttact:
                     if (self.enemyDied[self.enemyIndex[0]] or self.enemyDied[self.enemyIndex[1]]) or (self.index == 0 or self.index == 1):
-                        if (not self.curPos in self.midLine) and (not self.curInDangerous):
-                            # foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
-                            # action, target = myProblem.minDistance(self.curPos, [foodFarFromEnemy], self.walls, self)
-                            # mode = (action, ("eatFood", target))
-                            return ()
+                        if (not self.curPos in self.midLine):
+                            midPos = self.getMiddleLinePositionToAttack(self.enemyPositionsToDefend)
+                            action,target = myProblem.minDistance(self.curPos,[midPos],self.walls,self)
+                            if debug:
+                                self.debugDraw(midPos,[1,0,0])
+                            mode = (action,("eatFood",target))
+                            return mode
                         else:
-                            # problem = myProblem.EatOneSafeFoodProblem(gameState, self)
-                            # actions, target = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic, 0.4)
-                            # if self.legalAction(actions):
-                            #     mode = (actions[0], ("eatFood", target))
-                            # else:
-                            #     foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
-                            #     action, target = myProblem.minDistance(self.curPos, [foodFarFromEnemy], self.walls, self)
-                            #     mode = (action, ("eatFood", target))
                             return ()
                     else:
+                        # action, target = self.defence()
+                        # mode = (action, ("defence", target))
+                        mode = self.intercept(gameState)
+                        enemyNeedToTrace = self.getEnemyNeedToTrace()
+                        enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
+                        if self.shouldITrace(enemyPos,gameState):
+                            if mode == ():
+                                mode = self.trace(enemyNeedToTrace)
+                        else:
+                            action, target = self.defence()
+                            mode = (action, ("defence", target))
+                else:
+                    # action, target = self.defence()
+                    # mode = (action, ("defence", target))
+                    enemyNeedToTrace = self.getEnemyNeedToTrace()
+                    enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
+                    mode = self.intercept(gameState)
+                    if mode == ():
                         action, target = self.defence()
                         mode = (action, ("defence", target))
-                else:
-                    action, target = self.defence()
-                    mode = (action, ("defence", target))
             elif self.getEnemyOneAtHome():
                 enemyNeedToTrace = self.getEnemyNeedToTrace()
                 enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
-                if self.shouldITrace(enemyPos):
-                    mode = self.trace(enemyNeedToTrace)
+                if not self.canAttact:
+                     #改追击的目标，不能用离豆子最近
+                    mode = self.interceptToMid(gameState)
+                    if mode == ():
+                        mode = self.trace(enemyNeedToTrace)
                 else:
-                    return ()
+                    if self.shouldITrace(enemyPos,gameState):
+                        mode = self.interceptToMid(gameState)
+                        if mode == ():
+                            mode = self.trace(enemyNeedToTrace)
+                    else:
+                        return ()
             elif self.getEnemyAllAtOur():
                 enemyNeedToTrace = self.getEnemyNeedToTrace()
                 enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
-                if self.shouldITrace(enemyPos):
-                    mode = self.trace(enemyNeedToTrace)
+                if not self.canAttact:
+                     #改追击的目标，不能用离豆子最近
+                    mode = self.interceptToMid(gameState)
+                    if mode == ():
+                        mode = self.trace(enemyNeedToTrace)
                 else:
-                    return ()
+                    if self.shouldITrace(enemyPos,gameState):
+                        mode = self.interceptToMid(gameState)
+                        if mode == ():
+                            mode = self.trace(enemyNeedToTrace)
+                    else:
+                        return ()
         else:
             return ()
         return mode
-
-
 
     def getNewWalls(self,newBlocking):
         walls = copy.deepcopy(self.walls)
@@ -1009,7 +1118,7 @@ class AttackAgent(CaptureAgent):
         mode = ()
         if self.ownScaredTimer>0:
             # print(self.foodGrid.asList())
-            if self.foodGrid.asList() != [] and len(self.getFood(gameState).asList()) > 2:
+            if self.canAttact:
                 mode = self.attack(gameState)
             else:
                 print("**********")
@@ -1034,9 +1143,21 @@ class AttackAgent(CaptureAgent):
                 mode = (action,("trace",target))
         return mode
 
+    # def goBackToDefence(self, gameState):
+    #
+    #     if self.
+    #     if self.getEnemyOneAtHome():
+    #
+    #     if self.foodGrid.asList() == [] or len(self.getFood(gameState).asList) <= 2:
+    #         enemyNeedToTrace = self.getEnemyNeedToTrace()
+    #         enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
+    #         mode = self.trace(enemyNeedToTrace)
+
+
+
     def helpTeammate(self,gameState):
         mode = ()
-        print(self.capsules)
+        # print("number of capsule",self.capsules)
         if agentMod[self.allienIndex] != []:
             if (agentMod[self.allienIndex][0] == "needHelp") and (len(self.capsules) > 0):
                 problem = myProblem.EatCapsuleProblem(gameState, self)
@@ -1046,8 +1167,14 @@ class AttackAgent(CaptureAgent):
                     mode = (actions2[0],("eatCapsule",target2))
         return mode
 
-    def shouldITrace(self, enemyPos):
-        print('@@@@@@@@@@@@@@@',enemyPos)
+    def shouldITrace(self, enemyPos,gameState):
+        manyDeadEnd = True
+        # print('@@@@@@@@@@@@@@@',enemyPos)
+        if manyDeadEnd:
+            distToFood = min(map(lambda a: self.distancer.getDistance(a, self.curPos), self.getFoodYouAreDefending(gameState).asList()))
+            enemyToFood = min(map(lambda a: self.distancer.getDistance(a, enemyPos), self.getFoodYouAreDefending(gameState).asList()))
+            if distToFood > enemyToFood:
+                return False
         if (self.curPos[0] in self.ourRegionX) and (self.teammatePos[0] in self.ourRegionX):
             if self.distancer.getDistance(enemyPos, self.curPos) > self.distancer.getDistance(enemyPos, self.teammatePos):
                 return False
