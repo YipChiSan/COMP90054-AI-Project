@@ -1175,7 +1175,7 @@ class AttackAgent(CaptureAgent):
         danger = False
         if not enemyPos is None:
             if enemyPos[0] in self.enemyRegionX or enemyPos in self.midLine:
-                danger = danger or self.distancer.getDistance(pos, enemyPos) <= 8
+                danger = danger or self.distancer.getDistance(pos, enemyPos) <= 5
         return danger
 
     def inDanger(self, pos):
