@@ -435,8 +435,8 @@ class AttackAgent(CaptureAgent):
         #     self.debugDraw(minPos, [.98,.41,.07]) if minPos else None
         return minPos
 
-    def getMiddleLinePositionToDefend(self, gameState, enemyPositionToDefend):
-        curFoods = self.getFood(gameState).asList()
+    def getMiddleLinePositionToAttack(self, enemyPositionToDefend):
+        curFoods = self.foodGrid.asList()
         maxDis = float("-inf")
         maxPos = None
         enemyList = []
@@ -558,11 +558,10 @@ class AttackAgent(CaptureAgent):
                 enemy = index
         return enemy
 
-    def getClosedFood(self,gameState,teammateTarget):
+    def getClosedFood(self):
         minDist = 999999
-        foods = self.getFood(gameState).asList()
+        foods = self.foodGrid.asList()
         food = foods[0]
-        foods = list(set(foods) - set(teammateTarget))
         for i in foods:
             dist = self.distancer.getDistance(i,self.curPos)
             if dist < minDist:
@@ -664,7 +663,6 @@ class AttackAgent(CaptureAgent):
         self.capsules = self.getCapsules(gameState)
         self.curPos = gameState.getAgentPosition(self.index)
         teammateCluster = self.getTeammateTargetRegion(gameState)
-        # closestFood = self.getClosedFood(gameState,teammateCluster)
         enemyIndices = self.getOpponents(gameState)
         self.enemyPos = []
         for idx in enemyIndices:
@@ -696,6 +694,22 @@ class AttackAgent(CaptureAgent):
         self.foodGrid = self.getFood(gameState)
         self.numOfFoodLeft = len(self.foodGrid.asList())
         self.removeFoodsForTeammate(foodCluster)
+        self.foodList = self.foodGrid.asList()
+        if debug:
+            a = self.getMiddleLinePositionToAttack(self.enemyPositionsToDefend)
+            self.debugDraw(a, [1,0,0])
+        # distance to the closest point in own middle line
+        minDistToOwnMid = 999999
+        for midPoint in self.midLine:
+            newDist = self.distancer.getDistance(self.curPos, midPoint)
+            if newDist < minDistToOwnMid:
+                minDistToOwnMid = newDist
+                # closestOwnMidPos = midPoint
+        minDistToFood = 999999
+        for foodPos in self.foodList:
+            newDist = self.distancer.getDistance(self.curPos, foodPos)
+            if newDist < minDistToFood:
+                minDistToFood = newDist
 
         close = self.curCloseToEnemy(self.curPos, self.enemyPos)
         insight = self.curInsightOfEnemy(self.curPos, self.enemyPos)
@@ -834,7 +848,7 @@ class AttackAgent(CaptureAgent):
                 elif hasSafefood and hasCapsule and hasPathToEscape:
                     if self.carryFoods > 0:
                         # (len(self.getFood(gameState).asList()) / 3) :
-                        if distanceToEscape < 1:
+                        if distanceToEscape <= 1:
                                 # distanceToNearestCapsule + (len(self.getFoodsAroundCapsules(gameState)[target2])):
                             mode = (actions3[0], ("backToMid",target3))
                             print('6',mode)
@@ -842,19 +856,19 @@ class AttackAgent(CaptureAgent):
                             mode = (actions2[0], ("eatCapsule",target2))
                             print('7',mode)
                     else:
-                        if self.carryFoods >0:
-                            map = {
-                                distanceToNearestFood: (actions1[0], ("eatFood", target1)),
-                                distanceToNearestCapsule: (actions2[0], ("eatCapsule", target2)),
-                                distanceToEscape+10: (actions3[0], ("backToMid", target3))
-                            }
-                            minDis = min(distanceToNearestFood, distanceToNearestCapsule,distanceToEscape+10)
-                        else:
-                            map = {
-                                distanceToNearestFood: (actions1[0], ("eatFood", target1)),
-                                distanceToNearestCapsule: (actions2[0], ("eatCapsule", target2))
-                            }
-                            minDis = min(distanceToNearestFood, distanceToNearestCapsule)
+                        # if self.carryFoods > 0:
+                        #     map = {
+                        #         distanceToNearestFood: (actions1[0], ("eatFood", target1)),
+                        #         distanceToNearestCapsule: (actions2[0], ("eatCapsule", target2)),
+                        #         distanceToEscape+10: (actions3[0], ("backToMid", target3))
+                        #     }
+                        #     minDis = min(distanceToNearestFood, distanceToNearestCapsule,distanceToEscape+10)
+                        # else:
+                        map = {
+                            distanceToNearestFood: (actions1[0], ("eatFood", target1)),
+                            distanceToNearestCapsule: (actions2[0], ("eatCapsule", target2))
+                        }
+                        minDis = min(distanceToNearestFood, distanceToNearestCapsule)
                         mode = map[minDis]
                         print("8",mode)
                 elif hasSafefood and hasCapsule and not hasPathToEscape:
@@ -889,8 +903,8 @@ class AttackAgent(CaptureAgent):
                 else:
                     print('ERROR @'*40)
             else:
-                foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
-                closestFood = self.getClosedFood(gameState,foodFarFromEnemy)
+                # foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
+                closestFood = self.getClosedFood()
                 midDis, midPos = self.getClostestMidDistance(self.curPos)
                 foodDis = self.distancer.getDistance(closestFood, self.curPos)
                 if (foodDis > midDis + 5) and (self.carryFoods > 0):
@@ -921,13 +935,13 @@ class AttackAgent(CaptureAgent):
         return minPos, minDis
 
     def inDanger(self, pos):
-        inThreeSteps = False
+        inFiveSteps = False
         for i in self.enemyPos:
             if not i is None:
                 if i[0] in self.enemyRegionX or i in self.midLine:
-                    inThreeSteps = inThreeSteps or self.distancer.getDistance(pos, i) <= 5
+                    inFiveSteps = inFiveSteps or self.distancer.getDistance(pos, i) <= 5
         beSeen = self.curInsightOfEnemy(pos, self.enemyPos)
-        return beSeen and inThreeSteps and (pos[0] in self.enemyRegionX or (pos in self.midLine))
+        return beSeen and inFiveSteps and (pos[0] in self.enemyRegionX or (pos in self.midLine))
 
     # def whenBackToMid(self):
     #
@@ -995,7 +1009,7 @@ class AttackAgent(CaptureAgent):
         mode = ()
         if self.ownScaredTimer>0:
             # print(self.foodGrid.asList())
-            if self.foodGrid.asList() != [] or (len(self.getFood.asList()) <= 2):
+            if self.foodGrid.asList() != [] and len(self.getFood(gameState).asList()) > 2:
                 mode = self.attack(gameState)
             else:
                 print("**********")
@@ -1014,7 +1028,8 @@ class AttackAgent(CaptureAgent):
                     blocks.append((nextx,nexty))
                 newWalls = self.getNewWalls(blocks)
                 for i in blocks:
-                    self.debugDraw(i,[0.5,0.5,0.5])
+                    if debug:
+                        self.debugDraw(i,[0.5,0.5,0.5])
                 action,target = myProblem.minDistance(self.curPos,[self.enemyPositionsToDefend[enemy]],newWalls,self)
                 mode = (action,("trace",target))
         return mode
@@ -1053,7 +1068,8 @@ class AttackAgent(CaptureAgent):
                     minDist = dist
                     closestMid = pos
         action,target = myProblem.minDistance(self.curPos, [closestMid], self.walls, self)
-        self.debugDraw(target,[0.8,0.4,0.2])
+        if debug:
+            self.debugDraw(target,[0.8,0.4,0.2])
         return action,target
 
     def trace(self, enemyIndex):
