@@ -143,49 +143,6 @@ class EatWithDeadEndProblem:  # default: eat one
         return sumFoodDist
 
 
-class EatCapsuleProblem:
-    def __init__(self, gameState, agent):
-        self.agent = agent
-        self.index = agent.index
-        self.walls = gameState.getWalls().deepCopy()
-        self.middleX = agent.midX
-        self.enemyMiddleX = agent.enemyMidX
-        self.middleLine = agent.midLine
-        self.enemyMiddleLine = agent.enemyMidLine
-        self.capsules = agent.getCapsules()
-
-    def getStartState(self, gameState, foodGrid):
-        return (gameState.getAgentPosition(self.index), self.capsules)
-
-    def isGoalState(self, gameState, state):
-        for capPos in state[1]:
-            if capPos == (-1, -1):
-                return True
-        return False
-
-    def getSuccessors(self, state):
-        successors = []
-        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
-            x, y = state[0]
-            dx, dy = Actions.directionToVector(direction)
-            nextx, nexty = int(x + dx), int(y + dy)
-            if not self.walls[nextx][nexty]:
-                for idx, (x, y) in enumerate(self.capsules):
-                    if x == nextx and y == nexty:
-                        self.capsules[idx] = (-1, -1)
-                successors.append((((nextx, nexty), self.capsules), direction, 1))
-        return successors
-
-    def eatCapsuleHeuristic(self, state):
-        curPos, capsuleList = state
-        minDistToCapsule = 999999
-        for capsule in capsuleList:
-            newDist = self.agent.distancer.getDistance(curPos, capsule)
-            if newDist < minDistToCapsule:
-                minDistToCapsule = newDist
-        return minDistToCapsule
-
-
 class ReachMiddleListProblem:
     def __init__(self, gameState, agent):
         self.agent = agent
@@ -269,84 +226,98 @@ class DefendingProblem:
         pass
 
 
-class EscapeProblem:
-    # fixme: strictly forbid path for pacman, useless in most situation
-    def __init__(self, gameState, agent):
-        self.index = agent.index
-        self.pacmanPos = gameState.getAgentPosition(self.index)
-        self.deadEnds = agent.deadEnd
-        self.walls = gameState.getWalls().deepCopy() + self.deadEnds  # add deadEnd points to walls
-        # self.walls = gameState.getWalls()
+class EnemyEatCloseFoodProblem:
+    def __init__(self, gameState, agent, enemyPos):
+        # self.index = enemyIndex
+        self.agent = agent
+        self.walls = gameState.getWalls().deepCopy()
         self.middleX = agent.midX
         self.enemyMiddleX = agent.enemyMidX
         self.middleLine = agent.midLine
         self.enemyMiddleLine = agent.enemyMidLine
-        self.enemyIndices = agent.getOpponents()
-        self.enemyPositions = set()  # in sight enemies
-        for idx in self.enemyIndices:
-            enemyPos = gameState.getAgentPosition(idx)
-            if enemyPos != None:
-                self.enemyPositions.add(enemyPos)
-        self.expandedForbidden = defaultdict(set())  # key is the expanded time
-
-    def storeExpandedForbidden(self, step):
-        # return a expanded wall list from original one
-        if step == 1:
-            for enemyPos in self.enemyPositions:
-                for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-                    x, y = enemyPos
-                    dx, dy = Actions.directionToVector(direction)
-                    nextx, nexty = int(x + dx), int(y + dy)
-                    if not self.walls[nextx][nexty]:
-                        self.expandedForbidden[step].add((nextx, nexty))
-        else:
-            for pos in self.expandedForbidden[step - 1]:
-                if step > 2:
-                    if pos not in self.expandedForbidden[step - 2]:
-                        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-                            x, y = pos
-                            dx, dy = Actions.directionToVector(direction)
-                            nextx, nexty = int(x + dx), int(y + dy)
-                            if (not self.walls[nextx][nexty]) and (
-                                (nextx, nexty) not in self.expandedForbidden[step - 1]):
-                                self.expandedForbidden[step].add((nextx, nexty))
-                else:
-                    for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-                        x, y = pos
-                        dx, dy = Actions.directionToVector(direction)
-                        nextx, nexty = int(x + dx), int(y + dy)
-                        if (not self.walls[nextx][nexty]) and ((nextx, nexty) not in self.expandedForbidden[step - 1]):
-                            self.expandedForbidden[step].add((nextx, nexty))
-            self.expandedForbidden[step].update(self.expandedForbidden[step - 1])
+        self.foods = agent.getFoodYouAreDefending(gameState).deepCopy()
+        self.foodList = self.foods.asList()
+        self.startPos = enemyPos
 
     def getStartState(self, gameState, foodGrid):
-        self.storeExpandedForbidden(1)
-        return (gameState.getAgentPosition(self.index), self.expandedForbidden[1], 1)
+        # 3: num of steps; 4: DeadEnd depth
+        return (self.startPos, self.foods)
 
     def isGoalState(self, gameState, state):
-        return state[0][0] == self.middleX
+        return len(state[1].asList()) < len(self.foodList)
 
     def getSuccessors(self, state):
         successors = []
-        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
             x, y = state[0]
             dx, dy = Actions.directionToVector(direction)
             nextx, nexty = int(x + dx), int(y + dy)
-            if (not self.walls[nextx][nexty]) and ((nextx, nexty) not in self.expandedForbidden[state[2]]):
-                if self.expandedForbidden[state[2] + 1] == None:
-                    self.storeExpandedForbidden(state[2] + 1)
-                successors.append(((nextx, nexty), self.expandedForbidden[state[2] + 1], state[2] + 1), direction, 1)
+            if not self.walls[nextx][nexty]:
+                nextFood = state[1].copy()
+                if (nextx, nexty) in state[1].asList():  # successor in enemy's place
+                    nextFood[nextx][nexty] = False
+                successors.append((((nextx, nexty), nextFood), direction, 1))
         return successors
 
-    def escapeHeuristic(self, state):
-        curPos = state[0]
-        middleList = self.middleLine
-        minDistToMid = 999999
-        for midPoint in middleList:
-            newDist = self.agent.distancer.getDistance(curPos, midPoint)
-            if newDist < minDistToMid:
-                minDistToMid = newDist
-        return minDistToMid
+    def EnemyEatCloseFoodHeuristic(self, state):
+        curPos, foods = state
+        minDist = 9999
+        foodList = copy.deepcopy(foods.asList())
+        for food in foodList:
+            dis = self.agent.distancer.getDistance(curPos, food)
+            minDist = min(minDist, dis)
+        return minDist
+
+
+# calculate path for eating X closest food from target
+class EatXClosestFoodFromTargetFoodProblem:
+    def __init__(self, gameState, agent, pos, distLimit):
+        self.startPos = pos
+        self.agent = agent
+        self.walls = gameState.getWalls().deepCopy()
+        minDist = 99999
+        for food in agent.foodGrid.asList():
+            dist = self.agent.distancer.getDistance(food, self.startPos)
+            if dist < minDist:
+                minDist = dist
+                self.targetFood = food
+
+        # remove food positions outside distLimit
+        self.keepFoods = Grid(agent.foodGrid.width, agent.foodGrid.height, False)
+        self.keepFoods[self.targetFood[0]][self.targetFood[1]] = True
+        for food in agent.foodGrid.asList():
+            if self.agent.distancer.getDistance(self.targetFood, food) <= distLimit:
+                self.keepFoods[food[0]][food[1]] = True
+
+
+    def getStartState(self, gameState, foodGrid):
+        # 3: num of steps; 4: DeadEnd depth
+        return (self.startPos, self.keepFoods)
+
+    def isGoalState(self, gameState, state):
+        return len(state[1].asList()) == 0
+
+    def getSuccessors(self, state):
+        successors = []
+        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:  # if STOP needed?
+            x, y = state[0]
+            dx, dy = Actions.directionToVector(direction)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextFood = state[1].copy()
+                if (nextx, nexty) in state[1].asList():  # successor in enemy's place
+                    nextFood[nextx][nexty] = False
+                successors.append((((nextx, nexty), nextFood), direction, 1))
+        return successors
+
+    def EatXClosestFoodFromTargetFoodHeuristic(self, state):
+        curPos, foods = state
+        maxDist = 0
+        foodList = copy.deepcopy(foods.asList())
+        for food in foodList:
+            dis = self.agent.distancer.getDistance(curPos, food)
+            maxDist = max(maxDist, dis)
+        return maxDist
 
 
 class EatOneSafeFoodProblem:
@@ -374,6 +345,18 @@ class EatOneSafeFoodProblem:
         self.enemyPositions = tuple(self.enemyPositions)
         self.startPos = gameState.getAgentPosition(self.index)
         self.ownScaredTimer = gameState.data.agentStates[self.index].scaredTimer
+        #fixme:
+        # remove white ghost with timer > 1
+        self.enemyScaredTimer = [gameState.data.agentStates[idx].scaredTimer for idx in self.enemyIndices]
+        for listIndex, timer in enumerate(self.enemyScaredTimer):
+            if timer > 1:
+                removeIndex = self.enemyIndices[listIndex]
+                removePos = gameState.getAgentPosition(removeIndex)
+                if removePos != None:
+                    print("remove white ghost with timer > 1")
+                    positions = list(self.enemyPositions)
+                    positions.remove(removePos)
+                    self.enemyPositions = tuple(positions)
         self.startDeadEndDepth = 0
         x, y = self.startPos
         if (x, y) in self.deadEnds:  # deadEnds store reversed x,y
@@ -411,10 +394,9 @@ class EatOneSafeFoodProblem:
                     closeDist = 999
                     for enemy in newEnemyPositions:
                         # enemy in our side / own agent is scared
-                        if (not enemy is None) and (enemy[0] in self.agent.ourRegionX or self.ownScaredTimer > 0):
+                        if (not enemy is None) and ((enemy[0] in self.agent.enemyRegionX) or self.ownScaredTimer > 0):
                             dis = self.agent.distancer.getDistance((nextx, nexty), enemy)
                             closeDist = min(closeDist, dis)
-                    # print("test for deadEnd",(nextx,nexty),self.deadEnds)
                     if ((nextx, nexty) in self.deadEnds):
                         numDE = self.agent.deadEnd[(nextx, nexty)]
                     else:
@@ -512,6 +494,18 @@ class EatCapsuleProblem:
                 self.enemyPositions.add(enemyPos)
         self.enemyPositions = tuple(self.enemyPositions)
         self.startPos = gameState.getAgentPosition(self.index)
+        #fixme:
+        # remove white ghost with timer > 1
+        self.enemyScaredTimer = [gameState.data.agentStates[idx].scaredTimer for idx in self.enemyIndices]
+        for listIndex, timer in enumerate(self.enemyScaredTimer):
+            if timer > 1:
+                removeIndex = self.enemyIndices[listIndex]
+                removePos = gameState.getAgentPosition(removeIndex)
+                if removePos != None:
+                    print("remove white ghost with timer > 1")
+                    positions = list(self.enemyPositions)
+                    positions.remove(removePos)
+                    self.enemyPositions = tuple(positions)
 
     def getStartState(self, gameState, foodGrid):
         # 3: num of steps; 4: DeadEnd depth
@@ -530,14 +524,7 @@ class EatCapsuleProblem:
             nextx, nexty = int(x + dx), int(y + dy)
             if not self.walls[nextx][nexty]:
                 newEnemyPositions = self.getNewEnemyPostion((nextx, nexty), separateExpandedForbidden)
-                if (nextx, nexty) not in expandedForbidden:  # self.testValid((nextx,nexty),state[1],state[3]):
-                    # if self.expandedForbidden[state[2]+1] == None:
-                    #   self.storeExpandedForbidden(state[2]+1)
-                    closeDist = 999
-                    for enemy in newEnemyPositions:
-                        if not enemy is None:
-                            dis = self.agent.distancer.getDistance((nextx, nexty), enemy)
-                            closeDist = min(closeDist, dis)
+                if (nextx, nexty) not in expandedForbidden:
                     nextCapsules = state[2]
                     if (nextx, nexty) in nextCapsules:
                         nextCapsules = list(nextCapsules)
@@ -629,6 +616,18 @@ class EscapeProblem1:
             if enemyPos != None:
                 self.enemyPositions.add(enemyPos)
         self.enemyPositions = tuple(self.enemyPositions)
+        #fixme:
+        # remove white ghost with timer > 1
+        self.enemyScaredTimer = [gameState.data.agentStates[idx].scaredTimer for idx in self.enemyIndices]
+        for listIndex, timer in enumerate(self.enemyScaredTimer):
+            if timer > 1:
+                removeIndex = self.enemyIndices[listIndex]
+                removePos = gameState.getAgentPosition(removeIndex)
+                if removePos != None:
+                    print("remove white ghost with timer > 1")
+                    positions = list(self.enemyPositions)
+                    positions.remove(removePos)
+                    self.enemyPositions = tuple(positions)
 
     def getStartState(self, gameState, foodGrid):
         return (gameState.getAgentPosition(self.index), self.enemyPositions)
