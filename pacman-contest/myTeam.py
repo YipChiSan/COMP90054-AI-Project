@@ -32,8 +32,8 @@ import gameData
 #################
 # Team creation #
 #################
-# debug = False
 debug = False
+# debug = True
 enemyPosition = getEnemyPosition.enemyPosition()
 gameData = gameData.gamedata()
 deadEnemy = {}
@@ -696,8 +696,9 @@ class AttackAgent(CaptureAgent):
             print("*************interceptToMid****************")
             path = self.pathToMidEnemy(gameState,enemyChase)
             # action,target = myProblem.minDistance(self.curPos,path,self.walls,self)
-            for i in path:
-                self.debugDraw(i,[0.6,0.3,0.7])
+            if debug:
+                for i in path:
+                    self.debugDraw(i,[0.6,0.3,0.7])
             minDist = 9999
             walls = self.getNewWalls(self.enemyMidLine)
             action,target = myProblem.minDistance(self.curPos,[enemyChase],walls,self)
@@ -726,8 +727,8 @@ class AttackAgent(CaptureAgent):
             print("*************intercept****************")
             path = self.pathToCloseFoodFromEnemy(gameState,enemyChase)
             # action,target = myProblem.minDistance(self.curPos,path,self.walls,self)
-            for i in path:
-                if debug:
+            if debug:
+                for i in path:
                     self.debugDraw(i,[0.6,0.3,0.7])
             minDist = 9999
 
@@ -809,8 +810,8 @@ class AttackAgent(CaptureAgent):
         self.curInDangerous = self.inDanger(self.curPos)
         self.teammateInDangerous = self.inDanger(self.teammatePos)
         self.inImmuneMode = False
-        for i in self.foodGrid.asList():
-            if debug:
+        if debug:
+            for i in self.foodGrid.asList():
                 self.debugDraw(i,[0,self.index / 3,self.index / 2])
         self.updateEnemyDied()
         ### BEGIN
@@ -1012,20 +1013,23 @@ class AttackAgent(CaptureAgent):
                 hasCapsule = self.legalAction(actions2)
                 if hasCapsule:
                     path = self.convertActionsToPath(self.curPos,actions2)
-                    for i in path:
-                        self.debugDraw(i,[0,0.4,0.9])
+                    if debug:
+                        for i in path:
+                            self.debugDraw(i,[0,0.4,0.9])
                 if hasSafefood:
                     path = self.convertActionsToPath(self.curPos,actions1)
-                    for i in path:
-                        self.debugDraw(i,[0.7,0.4,0.9])
+                    if debug:
+                        for i in path:
+                            self.debugDraw(i,[0.7,0.4,0.9])
 
                 problem = myProblem.EscapeProblem1(gameState, self)
                 actions3, target3 = self.aStarSearch(problem, gameState, problem.EscapeHeuristic, 0.2)
                 hasPathToEscape = self.legalAction(actions3)
                 if hasPathToEscape:
                     path = self.convertActionsToPath(self.curPos,actions3)
-                    for i in path:
-                        self.debugDraw(i,[0.2,0.1,0.9])
+                    if debug:
+                        for i in path:
+                            self.debugDraw(i,[0.2,0.1,0.9])
 
                 distanceToNearestFood = len(actions1) if actions1 else 999999
                 distanceToNearestCapsule = len(actions2) if actions2 else 999999
@@ -1307,8 +1311,8 @@ class AttackAgent(CaptureAgent):
                     nextx, nexty = int(x + dx), int(y + dy)
                     blocks.append((nextx,nexty))
                 newWalls = self.getNewWalls(blocks)
-                for i in blocks:
-                    if debug:
+                if debug:
+                    for i in blocks:
                         self.debugDraw(i,[0.5,0.5,0.5])
                 action,target = myProblem.minDistance(self.curPos,[self.enemyPositionsToDefend[enemy]],newWalls,self)
                 mode = (action,("trace",target))
