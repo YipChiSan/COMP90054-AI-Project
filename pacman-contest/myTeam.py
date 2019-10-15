@@ -33,7 +33,7 @@ import gameData
 # Team creation #
 #################
 # debug = False
-debug = True
+debug = False
 enemyPosition = getEnemyPosition.enemyPosition()
 gameData = gameData.gamedata()
 deadEnemy = {}
@@ -42,6 +42,7 @@ enemyCarryFoodNumber = collections.defaultdict(float)
 actionHistory = {}
 agentMod = {}
 positionHistory  ={}
+modeHistory = {}
 
 def createTeam(firstIndex, secondIndex, isRed,
                first='AttackAgent', second='AttackAgent'):
@@ -105,9 +106,28 @@ class AttackAgent(CaptureAgent):
         self.enemyDied = {}
         self.enemyDied[self.enemyIndex[0]] = False
         self.enemyDied[self.enemyIndex[1]] = False
-
         actionHistory[self.index] = []
         agentMod[self.index] = []
+        self.modeHistory = {}
+        self.modeHistory['pre'] = {}
+        self.modeHistory['pre']['start'] = 0
+        self.modeHistory['cur'] = {}
+        self.modeHistory['cur']['start'] = 0
+        self.breaking = 0
+
+    def updateModeHistory(self,mode):
+        # if (mode != list(self.modeHistory['cur'].keys())[0] or mode == list(self.modeHistory['pre'].keys())[0]) or ("start" == list(self.modeHistory['pre'].keys())[0]) :
+        last = copy.deepcopy(self.modeHistory['pre'])
+        self.modeHistory['pre'] = self.modeHistory['cur']
+        self.modeHistory['cur'] = {}
+        self.modeHistory['cur'][mode] = 1
+        if self.modeHistory['cur'].keys() == last.keys():
+            self.modeHistory['cur'][mode] += last[mode]
+        # else:
+        #     self.modeHistory['cur'][mode] += 1
+        print(self.modeHistory)
+
+
 
     def getMapMatrix(self, gameState):
         """
@@ -440,7 +460,7 @@ class AttackAgent(CaptureAgent):
     def getMiddleLinePositionToAttack(self, enemyPositionToDefend):
         curFoods = self.foodGrid.asList()
         maxDis = float("-inf")
-        maxPos = None
+        maxPos = random.choice(self.midLine)
         enemyList = []
         for i in enemyPositionToDefend:
             enemyList.append(enemyPositionToDefend[i])
@@ -673,8 +693,7 @@ class AttackAgent(CaptureAgent):
             path = self.pathToMidEnemy(gameState,enemyChase)
             # action,target = myProblem.minDistance(self.curPos,path,self.walls,self)
             for i in path:
-                if debug:
-                    self.debugDraw(i,[0.6,0.3,0.7])
+                self.debugDraw(i,[0.6,0.3,0.7])
             minDist = 9999
             walls = self.getNewWalls(self.enemyMidLine)
             action,target = myProblem.minDistance(self.curPos,[enemyChase],walls,self)
@@ -790,31 +809,35 @@ class AttackAgent(CaptureAgent):
             if debug:
                 self.debugDraw(i,[0,self.index / 3,self.index / 2])
         self.updateEnemyDied()
-        
         ### BEGIN
-        mode = self.helpTeammate(gameState)
+        mode = self.icebreak(gameState)
         if mode != ():
             action, agentMod[self.index] = mode
         else:
-            mode = self.inOurRegion(gameState)
+            mode = self.helpTeammate(gameState)
             if mode != ():
                 action, agentMod[self.index] = mode
             else:
-                mode = self.enemyScaredPolicy(gameState)
-                print('@@@@@@@@', mode)
+                mode = self.inOurRegion(gameState)
                 if mode != ():
                     action, agentMod[self.index] = mode
                 else:
-                    mode = self.attack(gameState)
+                    mode = self.enemyScaredPolicy(gameState)
+                    print('@@@@@@@@', mode)
                     if mode != ():
                         action, agentMod[self.index] = mode
                     else:
-                        action = 'Stop'
-                        agentMod[self.index] = ("stop",self.curPos)
+                        mode = self.attack(gameState)
+                        if mode != ():
+                            action, agentMod[self.index] = mode
+                        else:
+                            action = 'Stop'
+                            agentMod[self.index] = ("stop",self.curPos)
         self.updateDeath(gameState, action)
         teammateState[self.index] = gameState.generateSuccessor(self.index,action)
         actionHistory[self.index].append(action)
         self.lastAction = action
+        self.updateModeHistory(agentMod[self.index])
         return action
 
     def enemyScaredPolicy(self, gameState):
@@ -1062,13 +1085,13 @@ class AttackAgent(CaptureAgent):
                             print('10',mode)
                         else:
                             mode = (actions2[0], ("eatCapsule",target2))
-                            path = self.convertActionsToPath(self.curPos,actions2)
-                            num = 0
-                            for i in path:
-                                if i[0] in self.ourRegionX:
-                                    num += 1
-                            if num > 4:
-                                self.start = True
+                            # path = self.convertActionsToPath(self.curPos,actions2)
+                            # num = 0
+                            # for i in path:
+                            #     if i[0] in self.ourRegionX:
+                            #         num += 1
+                            # if num > 4:
+                            #     self.start = True
                             print('11',mode)
                 elif hasSafefood and not hasCapsule and hasPathToEscape:
                     if self.carryFoods >= len(self.getFood(gameState).asList()) and (not self.inImmuneMode):
@@ -1082,9 +1105,15 @@ class AttackAgent(CaptureAgent):
                         #     print('14')
                         #     mode = (actions3[0], ("backToMid",target3))
                 elif not hasSafefood and not hasCapsule and not hasPathToEscape:
-                    action, target = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
-                    mode = (action, ("needHelp",target))
-                    print('15', mode)
+                    if self.curPos[0] in self.ourRegionX:
+                        enemyNeedToTrace = self.getEnemyNeedToTrace()
+                        enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
+                        mode = self.interceptToMid(gameState)
+                        print("15.5",mode)
+                    else:
+                        action, target = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
+                        mode = (action, ("needHelp",target))
+                        print('15', mode)
                 else:
                     print('ERROR @'*40)
             else:
@@ -1097,24 +1126,30 @@ class AttackAgent(CaptureAgent):
                 if (foodDis > midDis + 5) and (self.carryFoods > 0) and (midDis < 2):
                     action, target = myProblem.minDistance(self.curPos, [midPos], self.walls, self)
                     mode = (action, ("backToMid", target))
-                    print(self.index,mode)
+                    print("safe back",self.index,mode)
                 else:
                     action, target = myProblem.minDistance(self.curPos, self.foodGrid.asList(), self.walls, self)
                     mode = (action, ("eatFood", target))
-                    print(self.index,mode)
+                    print("safe eat",self.index,mode)
         else:
             if self.curPos[0] in self.ourRegionX:
-                midPos = self.getMiddleLinePositionToAttack(self.enemyPositionsToDefend)
-                action,target = myProblem.minDistance(self.curPos,[midPos],self.walls,self)
-                if debug:
-                    self.debugDraw(midPos,[1,0,0])
-                mode = (action,("eatFood",target))
+                enemyNeedToTrace = self.getEnemyNeedToTrace()
+                enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
+                mode = self.interceptToMid(gameState)
+                # mode = (action,("trace",target))
             else:
                 if self.curInDangerous:
-                    action, target = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
+                    problem = myProblem.EscapeProblem1(gameState, self)
+                    actions3, target3 = self.aStarSearch(problem, gameState, problem.EscapeHeuristic, 0.2)
+                    hasPathToEscape = self.legalAction(actions3)
+                    if hasPathToEscape:
+                        mode = (actions3[0], ("backToMid", target3))
+                    else:
+                        action, target = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
+                        mode = (action, ("needHelp", target))
                 else:
                     action, target = myProblem.minDistance(self.curPos, self.midLine, self.walls, self)
-                mode = (action, ("backToMid", target))
+                    mode = (action, ("backToMid", target))
             print(self.index, mode)
         return mode
 
@@ -1132,7 +1167,7 @@ class AttackAgent(CaptureAgent):
         danger = False
         if not enemyPos is None:
             if enemyPos[0] in self.enemyRegionX or enemyPos in self.midLine:
-                danger = danger or self.distancer.getDistance(pos, enemyPos) <= 5
+                danger = danger or self.distancer.getDistance(pos, enemyPos) <= 8
         return danger
 
     def inDanger(self, pos):
@@ -1284,7 +1319,27 @@ class AttackAgent(CaptureAgent):
     #         enemyNeedToTrace = self.getEnemyNeedToTrace()
     #         enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
     #         mode = self.trace(enemyNeedToTrace)
-
+    def icebreak(self,gameState):
+        mode = ()
+        # mideRegion = []
+        # for i in
+        if (self.modeHistory['pre'].keys() != self.modeHistory['cur'].keys()) and (list(self.modeHistory['pre'].values())[0] > 2) and (list(self.modeHistory['cur'].values())[0] > 2):
+            self.breaking = 2
+            self.breakPoint = random.choice(self.midLine)
+        if (list(self.modeHistory['pre'].values())[0] > 40) or (list(self.modeHistory['cur'].values())[0] > 40):
+            if self.getScore(gameState) <= 0 :
+                self.breaking = 2
+                self.breakPoint = random.choice(self.midLine)
+        if self.breaking > 0:
+            print("BREAKING!")
+            if self.curPos in self.ourRegionX:
+                walls = self.getNewWalls(self.enemyMidLine)
+            else:
+                walls = copy.deepcopy(self.walls)
+            action, target = myProblem.minDistance(self.curPos,[self.breakPoint],walls,self)
+            mode = (action,("break",target))
+            self.breaking += -1
+        return mode
 
 
     def helpTeammate(self,gameState):
@@ -1322,7 +1377,9 @@ class AttackAgent(CaptureAgent):
         else:
             return True
 
-    # def wining(self):
+    # def wining(self,gameState):
+    #     if self.getScore(gameState) > 0:
+
 
     def defence(self):
         minDist = 999999
@@ -1386,3 +1443,4 @@ class AttackAgent(CaptureAgent):
                             path = current_node[1] + [successor[1]]
                             frontier.push((successor[0], path, cost_g), priority)
         return None, None
+
