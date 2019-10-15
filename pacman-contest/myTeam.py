@@ -558,11 +558,10 @@ class AttackAgent(CaptureAgent):
                 enemy = index
         return enemy
 
-    def getClosedFood(self,gameState):
+    def getClosedFood(self):
         minDist = 999999
         foods = self.foodGrid.asList()
         food = foods[0]
-        # foods = list(set(foods) - set(teammateTarget))
         for i in foods:
             dist = self.distancer.getDistance(i,self.curPos)
             if dist < minDist:
@@ -635,6 +634,25 @@ class AttackAgent(CaptureAgent):
             if dist1 > dist2 - 5:
                 self.foodGrid[i[0]][i[1]] = False
 
+    def convertActionsToPath(self, startPos, actions):
+        x, y = startPos
+        pathList = []
+        for action in actions:
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            pathList.append((nextx, nexty))
+            x = nextx
+            y = nexty
+        return pathList
+
+    def pathToCloseFoodFromEnemy(self, gameState, enemyPos):
+        problem = myProblem.EnemyEatCloseFoodProblem(gameState, self, enemyPos)
+        actions, target = self.aStarSearch(problem, gameState, problem.EnemyEatCloseFoodHeuristic, 0.03)
+        pathList = self.convertActionsToPath(enemyPos, actions)
+        if actions == [] or actions == "TIMEEXCEED" or actions == None:
+            return []
+        return pathList
+
     ####################################################################################################################
     def chooseAction(self, gameState):
         print("=============",self.index,"==============")
@@ -645,7 +663,6 @@ class AttackAgent(CaptureAgent):
         self.capsules = self.getCapsules(gameState)
         self.curPos = gameState.getAgentPosition(self.index)
         teammateCluster = self.getTeammateTargetRegion(gameState)
-        # closestFood = self.getClosedFood(gameState,teammateCluster)
         enemyIndices = self.getOpponents(gameState)
         self.enemyPos = []
         for idx in enemyIndices:
@@ -678,8 +695,9 @@ class AttackAgent(CaptureAgent):
         self.numOfFoodLeft = len(self.foodGrid.asList())
         self.removeFoodsForTeammate(foodCluster)
         self.foodList = self.foodGrid.asList()
-        a = self.getMiddleLinePositionToAttack(self.enemyPositionsToDefend)
-        self.debugDraw(a, [1,0,0])
+        if debug:
+            a = self.getMiddleLinePositionToAttack(self.enemyPositionsToDefend)
+            self.debugDraw(a, [1,0,0])
         # distance to the closest point in own middle line
         minDistToOwnMid = 999999
         for midPoint in self.midLine:
@@ -886,7 +904,7 @@ class AttackAgent(CaptureAgent):
                     print('ERROR @'*40)
             else:
                 # foodFarFromEnemy = self.getFoodFarFromEnemy(self.curPos, self.enemyPositionsToDefend)
-                closestFood = self.getClosedFood(gameState)
+                closestFood = self.getClosedFood()
                 midDis, midPos = self.getClostestMidDistance(self.curPos)
                 foodDis = self.distancer.getDistance(closestFood, self.curPos)
                 if (foodDis > midDis + 5) and (self.carryFoods > 0):
