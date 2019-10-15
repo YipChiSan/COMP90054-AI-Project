@@ -114,6 +114,7 @@ class AttackAgent(CaptureAgent):
         self.modeHistory['cur'] = {}
         self.modeHistory['cur']['start'] = 0
         self.breaking = 0
+        self.inHomeEating = 0
 
     def updateModeHistory(self,mode):
         # if (mode != list(self.modeHistory['cur'].keys())[0] or mode == list(self.modeHistory['pre'].keys())[0]) or ("start" == list(self.modeHistory['pre'].keys())[0]) :
@@ -126,6 +127,9 @@ class AttackAgent(CaptureAgent):
         # else:
         #     self.modeHistory['cur'][mode] += 1
         print(self.modeHistory)
+        if (mode[0] == "eatFood" or mode[0] == "eatCapsule") and (self.curPos in self.midLine or self.curPos in self.enemyMidLine):
+            self.inHomeEating += 1
+
 
 
 
@@ -1323,12 +1327,15 @@ class AttackAgent(CaptureAgent):
         mode = ()
         # mideRegion = []
         # for i in
+        if self.inHomeEating > 10:
+            self.breaking = 4
+            self.breakPoint = random.choice(self.midLine)
         if (self.modeHistory['pre'].keys() != self.modeHistory['cur'].keys()) and (list(self.modeHistory['pre'].values())[0] > 2) and (list(self.modeHistory['cur'].values())[0] > 2):
-            self.breaking = 2
+            self.breaking = 4
             self.breakPoint = random.choice(self.midLine)
         if (list(self.modeHistory['pre'].values())[0] > 40) or (list(self.modeHistory['cur'].values())[0] > 40):
             if self.getScore(gameState) <= 0 :
-                self.breaking = 2
+                self.breaking = 4
                 self.breakPoint = random.choice(self.midLine)
         if self.breaking > 0:
             print("BREAKING!")
@@ -1339,6 +1346,9 @@ class AttackAgent(CaptureAgent):
             action, target = myProblem.minDistance(self.curPos,[self.breakPoint],walls,self)
             mode = (action,("break",target))
             self.breaking += -1
+            self.inHomeEating = 0
+
+
         return mode
 
 
