@@ -557,6 +557,10 @@ class AttackAgent(CaptureAgent):
             if self.enemyInRegion[index] == "Our":
                 minDist = min(minDist,self.distancer.getDistance(self.enemyPositionsToDefend[index],self.curPos))
                 enemy = index
+        if self.enemyCarryFood[self.enemyIndex[0]] > self.enemyCarryFood[self.enemyIndex[1]] + 5:
+            enemy = self.enemyIndex[0]
+        if self.enemyCarryFood[self.enemyIndex[0]] + 5 < self.enemyCarryFood[self.enemyIndex[1]]:
+            enemy = self.enemyIndex[1]
         return enemy
 
     def getClosedFood(self):
@@ -1161,8 +1165,9 @@ class AttackAgent(CaptureAgent):
                 enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
                 if not self.canAttact:
                      #改追击的目标，不能用离豆子最近
-                    mode = self.interceptToMid(gameState)
-                    if mode == ():
+                     if self.shouldIintercept(enemyPos):
+                        mode = self.interceptToMid(gameState)
+                     if mode == ():
                         mode = self.trace(enemyNeedToTrace)
                 else:
                     if self.shouldITrace(enemyPos,gameState):
@@ -1176,7 +1181,8 @@ class AttackAgent(CaptureAgent):
                 enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
                 if not self.canAttact:
                      #改追击的目标，不能用离豆子最近
-                    mode = self.interceptToMid(gameState)
+                    if self.shouldIintercept(enemyPos):
+                        mode = self.interceptToMid(gameState)
                     if mode == ():
                         mode = self.trace(enemyNeedToTrace)
                 else:
@@ -1196,6 +1202,16 @@ class AttackAgent(CaptureAgent):
             walls[pos[0]][pos[1]] = True
             # self.debugDraw(pos,[1,0,0])
         return walls
+
+    def shouldIintercept(self,enemyPos):
+        if self.curPos[0] in self.ourRegionX and self.teammatePos[0] in self.enemyRegionX:
+            return True
+        else:
+            if self.curPos[0] in self.ourRegionX and self.teammatePos[0] in self.ourRegionX:
+                if self.distancer.getDistance(enemyPos, self.curPos) > self.distancer.getDistance(enemyPos, self.teammatePos):
+                    return False
+            return False
+
 
 
     def beenScared(self,gameState):
@@ -1255,10 +1271,17 @@ class AttackAgent(CaptureAgent):
         manyDeadEnd = True
         # print('@@@@@@@@@@@@@@@',enemyPos)
         if manyDeadEnd:
-            distToFood = min(map(lambda a: self.distancer.getDistance(a, self.curPos), self.getFoodYouAreDefending(gameState).asList()))
-            enemyToFood = min(map(lambda a: self.distancer.getDistance(a, enemyPos), self.getFoodYouAreDefending(gameState).asList()))
-            if distToFood > enemyToFood:
-                return False
+            if len(self.getFoodYouAreDefending(gameState).asList()) > 3:
+                minDist = 9999
+                pos = random.choice(self.getFoodYouAreDefending(gameState).asList())
+                for i in self.getFoodYouAreDefending(gameState).asList():
+                    dist = self.distancer.getDistance(i,enemyPos)
+                    if dist < minDist:
+                        minDist = dist
+                        pos = i
+                distToFood = self.distancer.getDistance(pos,self.curPos)
+                if distToFood > minDist:
+                    return False
         if (self.curPos[0] in self.ourRegionX) and (self.teammatePos[0] in self.ourRegionX):
             if self.distancer.getDistance(enemyPos, self.curPos) > self.distancer.getDistance(enemyPos, self.teammatePos):
                 return False
