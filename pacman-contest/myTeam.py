@@ -880,7 +880,7 @@ class AttackAgent(CaptureAgent):
                             perfectFood = food
                             distToPerfectFood = distToFood
 
-                if perfectFood != None:
+                if perfectFood != None and minSumDist <= timer:
                     print("!!!!!!!!!!!!!!!!!!!!!!")
                     print("[enemy scared]eatFoodThenCapsule")
                     action, target = myProblem.minDistance(self.curPos, [perfectFood], self.walls, self)
