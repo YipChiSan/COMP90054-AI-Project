@@ -471,7 +471,8 @@ class AttackAgent(CaptureAgent):
             enemyList.append(enemyPositionToDefend[i])
         for i in enemyList:
             # print("enemyList",enemyList)
-            self.debugDraw(i,[0,0.8,.4])
+            if debug:
+                self.debugDraw(i,[0,0.8,.4])
         for i in curFoods:
             distanceToFood = self.distancer.getDistance(curPos, i)
             distanceToGhost = min(map(lambda x: self.distancer.getDistance(x, curPos), enemyList))
@@ -840,7 +841,7 @@ class AttackAgent(CaptureAgent):
         # print(closestMid)
         action,target = myProblem.minDistance(self.curPos, [closestMid], self.walls, self)
         agentMod[self.index] = ("go defence",target)
-        self.debugDraw(target,[0.8,0.4,0.2])
+        # self.debugDraw(target,[0.8,0.4,0.2])
         return action,target
 
     # def defendFood(self,gameState):
