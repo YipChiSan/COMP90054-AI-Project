@@ -818,41 +818,34 @@ class AttackAgent(CaptureAgent):
                 self.debugDraw(i,[0,self.index / 3,self.index / 2])
         self.updateEnemyDied()
         ### BEGIN
-        mode = self.icebreak(gameState)
+        # mode = self.icebreak(gameState)
+        # if mode != ():
+        #     action, agentMod[self.index] = mode
+        # else:
+        mode = self.helpTeammate(gameState)
         if mode != ():
             action, agentMod[self.index] = mode
         else:
-            mode = self.helpTeammate(gameState)
+            mode = self.inOurRegion(gameState)
             if mode != ():
                 action, agentMod[self.index] = mode
             else:
-                mode = self.inOurRegion(gameState)
+                mode = self.enemyScaredPolicy(gameState)
                 if mode != ():
                     action, agentMod[self.index] = mode
                 else:
-                    mode = self.enemyScaredPolicy(gameState)
+                    mode = self.attack(gameState)
                     if mode != ():
                         action, agentMod[self.index] = mode
                     else:
-                        mode = self.attack(gameState)
-                        if mode != ():
-                            action, agentMod[self.index] = mode
-                        else:
-                            action = 'Stop'
-                            agentMod[self.index] = ("stop",self.curPos)
+                        action = 'Stop'
+                        agentMod[self.index] = ("stop",self.curPos)
         self.updateDeath(gameState, action)
         teammateState[self.index] = gameState.generateSuccessor(self.index,action)
         actionHistory[self.index].append(action)
         self.lastAction = action
         self.updateModeHistory(agentMod[self.index])
         return action
-
-    # def timeOut(self, gameState):
-    #     mode = ()
-    #     timeLeft = gameState.data.timeleft
-    #     problem = myProblem.EscapeProblem1()
-    # 
-    #     return mode
 
     # def interceptEnemyWhenAboutToLose(self, gameState):
     #     mode = ()
@@ -880,7 +873,7 @@ class AttackAgent(CaptureAgent):
             enemyInfo[idx]["pos"] = self.enemyPos[idx]
             enemyInfo[idx]["scaredTimer"] = self.enemyScaredTimer[idx]
             # enemyInfo[idx]["inSight"] = self.curInsightOfEnemy(self.curPos, self.enemyPos[idx])
-            enemyInfo[idx]["isDanger"] = self.enemyIsDanger(self.curPos, self.enemyPos[idx]) and (self.enemyPos[idx][0] in self.enemyRegionX or self.enemyPos[idx] in self.midLine)
+            enemyInfo[idx]["isDanger"] = self.enemyIsDanger(self.curPos, self.enemyPos[idx])
 
         curX, curY = self.curPos
         for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
@@ -1173,22 +1166,21 @@ class AttackAgent(CaptureAgent):
     def enemyIsDanger(self, pos, enemyPos):# single position
         danger = False
         if not enemyPos is None:
-            # if enemyPos[0] in self.enemyRegionX or enemyPos in self.midLine:
-            danger = danger or self.distancer.getDistance(pos, enemyPos) <= 5 #fixme: 5 or 8???
+            if enemyPos[0] in self.enemyRegionX or enemyPos in self.midLine:
+                danger = danger or self.distancer.getDistance(pos, enemyPos) <= 5 #fixme: 5 or 8???
+            elif self.ownScaredTimer > 0:
+                danger = danger or self.distancer.getDistance(pos, enemyPos) <= 5
         return danger
 
     def inDanger(self, pos):
         inFiveSteps = False
-        enemyInEnemyRegion = False
         for i in self.enemyPos:
-            if not i is None:
-                inFiveSteps = inFiveSteps or self.enemyIsDanger(pos, i)
-                if inFiveSteps == True:
-                    enemyInEnemyRegion = enemyInEnemyRegion or (i[0] in self.enemyRegionX or i in self.midLine)
+            # fixme：enemyIsDanger 有问题，敌人在自家不会被判定为true
+            inFiveSteps = inFiveSteps or self.enemyIsDanger(pos, i)
         beSeen = self.curInsightOfEnemy(pos, self.enemyPos)
         beScaredInOurRegion = (self.ownScaredTimer > 0 and pos[0] in self.ourRegionX)
-        agentInEnemyRegion = pos[0] in self.enemyRegionX or (pos in self.midLine)
-        return beSeen and inFiveSteps and ((enemyInEnemyRegion and agentInEnemyRegion) or beScaredInOurRegion)
+        inEnemyRegion = pos[0] in self.enemyRegionX or (pos in self.midLine)
+        return beSeen and inFiveSteps and (inEnemyRegion or beScaredInOurRegion)
 
     def inOurRegion(self, gameState):
         mode = ()
