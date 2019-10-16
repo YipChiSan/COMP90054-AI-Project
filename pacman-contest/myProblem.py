@@ -390,7 +390,6 @@ class EatOneSafeFoodProblem:
             if timer > 1:
                 removeIndex = self.enemyIndices[listIndex]
                 removePos = gameState.getAgentPosition(removeIndex)
-                print("EatOneSafeFoodProblem: remove white ghost with timer > 1, pos:", removePos)
                 if removePos != None:
                     positions = list(self.enemyPositions)
                     positions.remove(removePos)
@@ -539,7 +538,6 @@ class EatCapsuleProblem:
             if timer > 1:
                 removeIndex = self.enemyIndices[listIndex]
                 removePos = gameState.getAgentPosition(removeIndex)
-                print("EatCapsuleProblem: remove white ghost with timer > 1, pos:", removePos)
                 if removePos != None:
                     positions = list(self.enemyPositions)
                     positions.remove(removePos)
@@ -661,7 +659,6 @@ class EscapeProblem1:
             if timer > 1:
                 removeIndex = self.enemyIndices[listIndex]
                 removePos = gameState.getAgentPosition(removeIndex)
-                print("EscapeProblem1: remove white ghost with timer > 1, pos:", removePos)
                 if removePos != None:
                     positions = list(self.enemyPositions)
                     positions.remove(removePos)
@@ -1072,8 +1069,7 @@ def reachOwnMidWithEnemyInsight(agent, gameState, index):
                 ghostList.append(enemyPos) # list of no-scared ghost
     # only regard ghost enemy as walls, don't regard pacman enemy as walls
     ghostEnemy = agent.ghostEnemy(ghostList)
-    # addList = ghostEnemy + list(agent.deadEnd.keys())
-    addList = ghostEnemy
+    addList = ghostEnemy + list(agent.deadEnd.keys())
 
     middleList = agent.midLine
     pos = gameState.getAgentPosition(index)
