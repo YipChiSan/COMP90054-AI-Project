@@ -707,7 +707,7 @@ class AttackAgent(CaptureAgent):
                     dx, dy = Actions.directionToVector(direction)
                     nextx, nexty = int(x + dx), int(y + dy)
                     # print("test",self.curPos,(nextx,nexty),path)
-                    if not (nextx,nexty) in self.walls.asList() and (not (nextx,nexty) in self.enemyMidLine):
+                    if not (nextx,nexty) in self.walls.asList():
                         distToPath = min(map(lambda a: self.distancer.getDistance(a, (nextx,nexty)), path))
                         distToEnemy = self.distancer.getDistance((nextx,nexty),enemyChase)
                         dist = distToEnemy + distToPath
@@ -768,13 +768,14 @@ class AttackAgent(CaptureAgent):
 
     ####################################################################################################################
     def chooseAction(self, gameState):
-        print("=============",self.index,"==============")
+        print("=============",self.index,"=============")
         for i in deadEnemy:
             if deadEnemy[i] > 0:
                 deadEnemy[i] += -1
         self.debugClear()
         self.capsules = self.getCapsules(gameState)
         self.curPos = gameState.getAgentPosition(self.index)
+        print("------------",self.curPos,"------------")
         teammateCluster = self.getTeammateTargetRegion(gameState)
         self.enemyIndices = self.getOpponents(gameState)
         self.enemyPos = []
@@ -1194,7 +1195,7 @@ class AttackAgent(CaptureAgent):
         danger = False
         if not enemyPos is None:
             if enemyPos[0] in self.enemyRegionX or enemyPos in self.midLine:
-                danger = danger or self.distancer.getDistance(pos, enemyPos) <= 8
+                danger = danger or self.distancer.getDistance(pos, enemyPos) <= 5 #fixme: 5 or 8???
         return danger
 
     def inDanger(self, pos):
