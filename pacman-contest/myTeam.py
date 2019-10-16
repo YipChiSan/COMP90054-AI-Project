@@ -695,9 +695,9 @@ class AttackAgent(CaptureAgent):
             print("*************interceptToMid****************")
             path = self.pathToMidEnemy(gameState,enemyChase)
             # action,target = myProblem.minDistance(self.curPos,path,self.walls,self)
-            if debug:
-                for i in path:
-                    self.debugDraw(i,[0.6,0.3,0.7])
+            # if debug:
+            #     for i in path:
+            #         self.debugDraw(i,[0.6,0.3,0.7])
             minDist = 9999
             # fixme: block enemyMidLine may result in Stop when agent in enemyPosition
             # walls = self.getNewWalls(self.enemyMidLine)
@@ -727,9 +727,9 @@ class AttackAgent(CaptureAgent):
             print("*************intercept****************")
             path = self.pathToCloseFoodFromEnemy(gameState,enemyChase)
             # action,target = myProblem.minDistance(self.curPos,path,self.walls,self)
-            if debug:
-                for i in path:
-                    self.debugDraw(i,[0.6,0.3,0.7])
+            # if debug:
+            # for i in path:
+            #     self.debugDraw(i,[0.6,0.3,0.7])
             minDist = 9999
             action,target = myProblem.minDistance(self.curPos,[enemyChase],self.walls,self)
             (x,y) = self.curPos
@@ -818,28 +818,32 @@ class AttackAgent(CaptureAgent):
                 self.debugDraw(i,[0,self.index / 3,self.index / 2])
         self.updateEnemyDied()
         ### BEGIN
-        # mode = self.icebreak(gameState)
-        # if mode != ():
-        #     action, agentMod[self.index] = mode
-        # else:
-        mode = self.helpTeammate(gameState)
+        mode = self.interceptEnemyWhenAboutToLose(gameState)
         if mode != ():
             action, agentMod[self.index] = mode
         else:
-            mode = self.inOurRegion(gameState)
+            mode = self.icebreak(gameState)
             if mode != ():
                 action, agentMod[self.index] = mode
             else:
-                mode = self.enemyScaredPolicy(gameState)
+                mode = self.helpTeammate(gameState)
                 if mode != ():
                     action, agentMod[self.index] = mode
                 else:
-                    mode = self.attack(gameState)
+                    mode = self.inOurRegion(gameState)
                     if mode != ():
                         action, agentMod[self.index] = mode
                     else:
-                        action = 'Stop'
-                        agentMod[self.index] = ("stop",self.curPos)
+                        mode = self.enemyScaredPolicy(gameState)
+                        if mode != ():
+                            action, agentMod[self.index] = mode
+                        else:
+                            mode = self.attack(gameState)
+                            if mode != ():
+                                action, agentMod[self.index] = mode
+                            else:
+                                action = 'Stop'
+                                agentMod[self.index] = ("stop",self.curPos)
         self.updateDeath(gameState, action)
         teammateState[self.index] = gameState.generateSuccessor(self.index,action)
         actionHistory[self.index].append(action)
@@ -847,20 +851,19 @@ class AttackAgent(CaptureAgent):
         self.updateModeHistory(agentMod[self.index])
         return action
 
-    # def interceptEnemyWhenAboutToLose(self, gameState):
-    #     mode = ()
-    #     defendingFoodNumLeft = len(self.getFoodYouAreDefending(gameState).asList())
-    #
-    #     if self.curPos[0] in self.enemyRegionX and self.teammatePos[0] in self.enemyRegionX:
-    #         if self.ownScaredTimer <= self.getClostestMidDistance(self.curPos)[0]:
-    #             if defendingFoodNumLeft <= 4: #fixme: test!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #                 if self.curInDangerous:
-    #                     mode = self.interceptToMid(gameState)
-    #                 else:
-    #                     print("back with no enemy insight")
-    #                     if agentMod[self.allienIndex] != "trace":
-    #                         mode = self.interceptToMid(gameState)
-    #     return mode
+    def interceptEnemyWhenAboutToLose(self, gameState):
+        mode = ()
+        defendingFoodNumLeft = len(self.getFoodYouAreDefending(gameState).asList())
+        if self.curPos[0] in self.enemyRegionX and self.teammatePos[0] in self.enemyRegionX:
+            if self.ownScaredTimer <= self.getClostestMidDistance(self.curPos)[0]:
+                if defendingFoodNumLeft <= 4: #fixme: test!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    if self.curInDangerous:
+                        mode = self.interceptToMid(gameState)
+                    else:
+                        print("back with no enemy insight")
+                        if agentMod[self.allienIndex] != "trace":
+                            mode = self.interceptToMid(gameState)
+        return mode
 
     def enemyScaredPolicy(self, gameState):
         # enemy scared
@@ -1205,13 +1208,11 @@ class AttackAgent(CaptureAgent):
                     else:
                         # action, target = self.defence()
                         # mode = (action, ("defence", target))
-                        mode = self.intercept(gameState)
                         enemyNeedToTrace = self.getEnemyNeedToTrace()
                         enemyPos = self.enemyPositionsToDefend[enemyNeedToTrace]
-                        if self.shouldITrace(enemyPos,gameState):
-                            if mode == ():
-                                mode = self.trace(enemyNeedToTrace)
-                        else:
+                        # if self.shouldITrace(enemyPos,gameState):
+                        mode = self.intercept(gameState)
+                        if mode == ():
                             action, target = self.defence()
                             mode = (action, ("defence", target))
                             print("I'm defending")
