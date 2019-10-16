@@ -456,8 +456,8 @@ class AttackAgent(CaptureAgent):
         ghostEnemy = self.ghostEnemy(enemyPos)
         pacmanEnemy = self.pacmanEnemy(enemyPos)
 
-        ownScaredTimer = gameState.data.agentStates[self.index].scaredTimer
-        enemyScaredTimer = [gameState.data.agentStates[idx].scaredTimer for idx in enemyIndices]
+        self.ownScaredTimer = gameState.data.agentStates[self.index].scaredTimer
+        self.enemyScaredTimer = [gameState.data.agentStates[idx].scaredTimer for idx in enemyIndices]
         numOfFoodCarried = gameState.data.agentStates[self.index].numCarrying
         self.foodGrid = self.getFood(gameState)
         self.foodList = self.foodGrid.asList()
@@ -480,7 +480,7 @@ class AttackAgent(CaptureAgent):
 
         # enemy scared
         timer = None  # None for not using capsule logic
-        if (enemyScaredTimer[0] > 0 or enemyScaredTimer[1] > 0) and curPos[0] in self.enemyRegionX:  # enemy is scared
+        if (self.enemyScaredTimer[0] > 0 or self.enemyScaredTimer[1] > 0) and curPos[0] in self.enemyRegionX:  # enemy is scared
             if numOfFoodLeft <= 2:
                 action, target = myProblem.reachOwnMidList(self, gameState, self.index)
                 self.lastAction = action
@@ -488,15 +488,15 @@ class AttackAgent(CaptureAgent):
                 if debug:
                     print("total time:", time.clock() - totalTime)
                 return action
-            if enemyScaredTimer[0] > 0 and enemyPos[0] != None:
-                if enemyScaredTimer[1] > 0 and enemyPos[1] != None:
-                    timer = min(enemyScaredTimer[0], enemyScaredTimer[1])
+            if self.enemyScaredTimer[0] > 0 and enemyPos[0] != None:
+                if self.enemyScaredTimer[1] > 0 and enemyPos[1] != None:
+                    timer = min(self.enemyScaredTimer[0], self.enemyScaredTimer[1])
                 elif enemyPos[1] == None:
-                    timer = enemyScaredTimer[0]
-                elif enemyScaredTimer[1] == 0 and enemyPos[1] != None:
+                    timer = self.enemyScaredTimer[0]
+                elif self.enemyScaredTimer[1] == 0 and enemyPos[1] != None:
                     # fixme: 5 need to be modified
                     if self.distancer.getDistance(curPos, enemyPos[1]) > 5:
-                        timer = enemyScaredTimer[0]
+                        timer = self.enemyScaredTimer[0]
                 if timer != None and timer <= minDistToOwnMid + 1:
                     if debug:
                         print("capsule action: reachOwnMidList")
@@ -506,8 +506,8 @@ class AttackAgent(CaptureAgent):
                         print("capsule action: eatCloseFood")
                     action, target = myProblem.eatCloseFood(self, gameState, self.index)
             elif enemyPos[0] == None:
-                if enemyScaredTimer[1] > 0 and enemyPos[1] != None:
-                    timer = enemyScaredTimer[1]
+                if self.enemyScaredTimer[1] > 0 and enemyPos[1] != None:
+                    timer = self.enemyScaredTimer[1]
                 if timer != None and timer <= minDistToOwnMid + 1:
                     if debug:
                         print("capsule action: reachOwnMidList")
@@ -519,7 +519,7 @@ class AttackAgent(CaptureAgent):
             else:  # enemyScaredTimer[0] == 0 and enemyPos[0] != None
                 # fixme: 5 need to be modified
                 if self.distancer.getDistance(curPos, enemyPos[0]) > 5:
-                    timer = enemyScaredTimer[1]
+                    timer = self.enemyScaredTimer[1]
                 if timer != None and timer <= minDistToOwnMid + 1:
                     if debug:
                         print("capsule action: reachOwnMidList")
@@ -537,7 +537,7 @@ class AttackAgent(CaptureAgent):
         # todo: scaredTimer > 0; agent in our own place as white ghost
 
         # own scared
-        if ownScaredTimer > 0 and curPos[0] in self.ourRegionX:
+        if self.ownScaredTimer > 0 and curPos[0] in self.ourRegionX:
             if numOfFoodLeft > 2:
                 problem = myProblem.EatOneSafeFoodProblem(gameState, self)
                 actions, target = self.aStarSearch(problem, gameState, problem.eatOneSafeHeuristic, 0.8)

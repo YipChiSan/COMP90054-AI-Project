@@ -1009,19 +1009,25 @@ class AttackAgent(CaptureAgent):
                     mode = (actions1[0], ("eatFood",target1))
                     print('1',mode)
                 elif not hasSafefood and hasCapsule and not hasPathToEscape:
-                    mode = (actions2[0], ("eatCapsule",target2))
-                    print('2',mode)
+                    if agentMod[self.allienIndex] == ("eatCapsule", target2):
+                        action, target = myProblem.reachOwnMidWithEnemyInsight(self, gameState, self.index)
+                        mode = (action, ("backToMid", target))
+                        print('2.0',mode)
+                    else:
+                        mode = (actions2[0], ("eatCapsule",target2))
+                        print('2',mode)
                 elif not hasSafefood and not hasCapsule and hasPathToEscape:
                     mode = (actions3[0], ("backToMid",target3))
                     print('3',mode)
                 elif not hasSafefood and hasCapsule and hasPathToEscape:
-                    #fixme
-                    if self.carryFoods > (len(self.getFood(gameState).asList()) / 3):
+                    if agentMod[self.allienIndex] == ("eatCapsule", target2):
+                    # if self.carryFoods > (len(self.getFood(gameState).asList()) / 3):
                         # if distanceToEscape < distanceToNearestCapsule + (len(self.getFoodsAroundCapsules(gameState)[target2]) / 5):
                         #     print('4')
                         #     mode = (actions3[0], ("backToMid",target3))
                         # else:
-                        mode = (actions2[0], ("eatCapsule",target2))
+                        # mode = (actions2[0], ("eatCapsule",target2))
+                        mode = (actions3[0], ("backToMid", target3))
                         print('5',mode)
                     else:
                         mode = (actions2[0], ("eatCapsule",target2))
@@ -1034,8 +1040,12 @@ class AttackAgent(CaptureAgent):
                             mode = (actions3[0], ("backToMid",target3))
                             print('6',mode)
                         else:
-                            mode = (actions2[0], ("eatCapsule",target2))
-                            print('7',mode)
+                            if agentMod[self.allienIndex] == ("eatCapsule", target2):
+                                mode = (actions1[0], ("eatFood", target1))
+                                print('7.0', mode)
+                            else:
+                                mode = (actions2[0], ("eatCapsule",target2))
+                                print('7.1',mode)
                     else:
                         # if self.carryFoods > 0:
                         #     map = {
@@ -1053,23 +1063,42 @@ class AttackAgent(CaptureAgent):
                         mode = map[minDis]
                         print("8",mode)
                 elif hasSafefood and hasCapsule and not hasPathToEscape:
-                    if self.carryFoods >= len(self.getFood(gameState).asList()):
-                        mode = (actions2[0], ("eatCapsule",target2))
-                        print('9',mode)
-                    elif hasSafefood:
-                        if distanceToNearestFood + 3 < distanceToNearestCapsule:
-                            mode = (actions1[0], ("eatFood",target1))
-                            print('10',mode)
+                    if agentMod[self.allienIndex] == ("eatCapsule", target2):
+                        mode = (actions1[0], ("eatFood", target1))
+                        print('9.0', mode)
+                    else:
+                        if self.carryFoods >= len(self.getFood(gameState).asList()):
+                            mode = (actions2[0], ("eatCapsule", target2))
+                            print('9.1', mode)
                         else:
-                            mode = (actions2[0], ("eatCapsule",target2))
-                            # path = self.convertActionsToPath(self.curPos,actions2)
-                            # num = 0
-                            # for i in path:
-                            #     if i[0] in self.ourRegionX:
-                            #         num += 1
-                            # if num > 4:
-                            #     self.start = True
-                            print('11',mode)
+                            if distanceToNearestFood + 3 < distanceToNearestCapsule:
+                                mode = (actions1[0], ("eatFood", target1))
+                                print('10', mode)
+                            else:
+                                mode = (actions2[0], ("eatCapsule", target2))
+                                print('11', mode)
+                    #
+                    # if self.carryFoods >= len(self.getFood(gameState).asList()):
+                    #     if agentMod[self.allienIndex] == ("eatCapsule", target2):
+                    #         mode = (actions1[0], ("eatFood", target1))
+                    #         print('9.0', mode)
+                    #     else:
+                    #         mode = (actions2[0], ("eatCapsule", target2))
+                    #         print('9.1', mode)
+                    # else:
+                    #     if distanceToNearestFood + 3 < distanceToNearestCapsule:
+                    #         mode = (actions1[0], ("eatFood",target1))
+                    #         print('10',mode)
+                    #     else:
+                    #         mode = (actions2[0], ("eatCapsule",target2))
+                    #         # path = self.convertActionsToPath(self.curPos,actions2)
+                    #         # num = 0
+                    #         # for i in path:
+                    #         #     if i[0] in self.ourRegionX:
+                    #         #         num += 1
+                    #         # if num > 4:
+                    #         #     self.start = True
+                    #         print('11',mode)
                 elif hasSafefood and not hasCapsule and hasPathToEscape:
                     if self.carryFoods >= len(self.getFood(gameState).asList()):
                         mode = (actions3[0], ("backToMid",target3))
@@ -1314,12 +1343,13 @@ class AttackAgent(CaptureAgent):
                 self.breaking = 4
                 self.breakPoint = random.choice(self.midLine)
         if self.breaking > 0:
-            print("BREAKING!")
-            if self.curPos in self.ourRegionX:
-                walls = self.getNewWalls(self.enemyMidLine)
-            else:
-                walls = copy.deepcopy(self.walls)
-            action, target = myProblem.minDistance(self.curPos,[self.breakPoint],walls,self)
+            print("BREAKING!") # todo:
+            # if self.curPos in self.ourRegionX:
+            #     walls = self.getNewWalls(self.enemyMidLine)
+            # else:
+            #     walls = copy.deepcopy(self.walls)
+            # action, target = myProblem.minDistance(self.curPos,[self.breakPoint],walls,self)
+            action, target = myProblem.reachSpecificMidWithEnemyInsight(self, gameState, self.index, self.breakPoint)
             mode = (action,("break",target))
             self.breaking += -1
             self.inHomeEating = 0

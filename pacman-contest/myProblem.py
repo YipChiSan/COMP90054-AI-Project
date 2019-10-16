@@ -956,7 +956,8 @@ def minDistanceAvoidGhost(pos, posList, walls, agent, ghostList):
                 if (adjacentx, adjacenty) in ghostList:
                     adjacentToGhost = True
                     break
-            if adjacentToGhost == True:
+            if adjacentToGhost == True and (nextx not in agent.ourRegionX or agent.ownScaredTimer > 0):
+                #(nextx, nexty)邻接有威胁的ghost，则不考虑这个(nextx,nexty)
                 continue
             for target in posList:
                 dist = agent.distancer.getDistance((nextx, nexty), target)
@@ -1023,30 +1024,6 @@ def eatFoodOutsideDeadEnd(agent, gameState, index):
     return (action, target)
 
 
-def eatCapsule(agent, gameState, index):
-    ghostIndices = agent.getOpponents(gameState)
-    ghostList = []
-    for idx in ghostIndices:
-        enemyPos = gameState.getAgentPosition(idx)
-        if enemyPos != None:
-            ghostList.append(enemyPos)
-    capsuleList = agent.capsules
-    pos = gameState.getAgentPosition(index)
-    walls = getWallsWithAdditionList(gameState, agent, ghostList)
-    action, target = minDistanceAvoidGhost(pos, capsuleList, walls, agent)
-    return action, target
-
-
-def eatFoodAvoidCapsule(agent, gameState, index):
-    food = agent.getFood(gameState)
-    foodList = food.asList()
-    pos = gameState.getAgentPosition(index)
-    capsules = agent.capsules
-    walls = getWallsWithAdditionList(gameState, agent, capsules)
-    action, target = minDistance(pos, foodList, walls, agent)
-    return action, target
-
-
 # reach the top middleLine position
 def reachSpecificEnemyMidPos(agent, gameState, index):
     middleList = agent.enemyMidLine
@@ -1065,17 +1042,38 @@ def reachOwnMidList(agent, gameState, index):
     return action, target
 
 
+# breaking used
+def reachSpecificMidWithEnemyInsight(agent, gameState, index, targetPos):
+    ghostIndices = agent.getOpponents(gameState)
+    ghostList = []
+    for enemyIndex in ghostIndices:
+        enemyPos = gameState.getAgentPosition(enemyIndex)
+        if enemyPos != None:
+            if gameState.data.agentStates[enemyIndex].scaredTimer <= 1:
+                ghostList.append(enemyPos) # list of no-scared ghost
+    # only regard ghost enemy as walls, don't regard pacman enemy as walls
+    ghostEnemy = agent.ghostEnemy(ghostList)
+    addList = ghostEnemy + list(agent.deadEnd.keys())
+
+    pos = gameState.getAgentPosition(index)
+    walls = getWallsWithAdditionList(gameState, agent, addList)
+    action, target = minDistanceAvoidGhost(pos, [targetPos], walls, agent, ghostList)
+    return action, target
+
+
 # used when escape & eatSafeFood return nothing
 def reachOwnMidWithEnemyInsight(agent, gameState, index):
     ghostIndices = agent.getOpponents(gameState)
     ghostList = []
-    for idx in ghostIndices:
-        enemyPos = gameState.getAgentPosition(idx)
+    for enemyIndex in ghostIndices:
+        enemyPos = gameState.getAgentPosition(enemyIndex)
         if enemyPos != None:
-            ghostList.append(enemyPos)
+            if gameState.data.agentStates[enemyIndex].scaredTimer <= 1:
+                ghostList.append(enemyPos) # list of no-scared ghost
     # only regard ghost enemy as walls, don't regard pacman enemy as walls
     ghostEnemy = agent.ghostEnemy(ghostList)
-    addList = ghostEnemy + list(agent.deadEnd.keys())
+    # addList = ghostEnemy + list(agent.deadEnd.keys())
+    addList = ghostEnemy
 
     middleList = agent.midLine
     pos = gameState.getAgentPosition(index)
